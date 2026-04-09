@@ -71,13 +71,12 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 };
 const AppContent = () => {
     const dispatch = useAppDispatch();
-    const user = useAppSelector((state) => state.auth.user);
+    const { user, loading } = useAppSelector((state) => state.auth);
+
     useEffect(() => {
-
-
-        if (!user) dispatch(restoreSession());
-
+        dispatch(restoreSession());
     }, []);
+
     useEffect(() => {
         if (user) {
             dispatch(fetchCart());

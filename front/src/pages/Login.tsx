@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { loginUser, clearSessionConflict } from "@/store/authSlice";
+import { loginUser, clearSessionConflict, verify2FA, send2FA } from "@/store/authSlice";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -23,7 +23,7 @@ const Login = () => {
                 loginUser({ username: email, password, force })
             ).unwrap();
 
-            console.log("LOGIN RESULT:", user);
+
 
             toast({
                 title: "Connexion réussie!",
@@ -32,15 +32,20 @@ const Login = () => {
 
             const role = user.role?.toUpperCase();
 
-            if (user.verified2FA) {
-                
-                if (role === "ADMIN_TWIN") {
-                    navigate("/admin", { replace: true });
-                } else {
-                    navigate("/", { replace: true });
+            if (!user.verified2FA) {
+                try {
+
+                    await dispatch(send2FA());
+
+                    // Now navigate to 2FA page
+                    navigate("/2fa", { replace: true });
+                } catch (err) {
+                    console.error("Failed to send 2FA code:", err);
+                    // Show error message to user
                 }
             } else {
-                navigate("/2fa", { replace: true });
+                if (role === "ADMIN_TWIN") navigate("/admin", { replace: true });
+                else navigate("/", { replace: true });
             }
 
         } catch (err: any) {

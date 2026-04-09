@@ -30,18 +30,21 @@ const ClearSession = async () => {
 };
 
 api.interceptors.request.use(async (config) => {
-    const method = config.method?.toUpperCase();
-    console.log("ALL COOKIES:", document.cookie);
+  const method = config.method?.toUpperCase();
+  const url = config.url || "";
+
+  if (
+    ["POST", "PUT", "DELETE", "PATCH"].includes(method || "") &&
+    !AUTH_ENDPOINTS.some(ep => url.includes(ep))
+  ) {
+    const token = Cookies.get("XSRF-TOKEN");
     
-    if (["POST", "PUT", "DELETE", "PATCH"].includes(method || "") && !AUTH_ENDPOINTS) {
-        let token = Cookies.get("XSRF-TOKEN");
-
-        if (token) {
-            config.headers["X-XSRF-TOKEN"] = token;
-        }
+    if (token) {
+      config.headers["X-XSRF-TOKEN"] = token;
     }
+  }
 
-    return config;
+  return config;
 });
 
 let isRedirecting = false;
@@ -51,7 +54,11 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const status = error.response?.status;
-        const url = error.config?.url;
+        const url = error.config?.url || "";
+
+        const isAuthEndpoint = AUTH_ENDPOINTS.some((p) =>
+            url.includes(p)
+        );
 
         switch (status) {
             case 0:
@@ -59,13 +66,22 @@ api.interceptors.response.use(
                 break;
 
             case 401:
+                if (isAuthEndpoint) {
+                    
+                    break;
+                }
+
                 if (!isRedirecting && !logoutInProgress) {
                     isRedirecting = true;
                     logoutInProgress = true;
 
-                    console.warn("[Auth] 401 → logging out");
-                    ClearSession();
+                    console.warn("[Auth] 401 → session expired → logging out");
 
+                    try {
+                        await ClearSession();
+                    } catch (e) {
+                        console.warn("Logout failed (ignored)");
+                    }
 
                     isRedirecting = false;
                 }
@@ -81,10 +97,9 @@ api.interceptors.response.use(
                 break;
 
             case 409:
-                console.warn("[Auth] Session expired (409)");
+                console.warn("[Auth] Session conflict (409)");
 
                 localStorage.clear();
-
                 break;
 
             default:

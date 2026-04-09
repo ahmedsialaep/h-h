@@ -49,13 +49,16 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
+    @Value("${app.security.cookiePath}")
+    private String cookiePath;
+
     private final TokenStoreService tokenStoreService;
 
 
     @Bean
     public CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repo = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repo.setCookiePath("/");
+        repo.setCookiePath(cookiePath);
         return repo;
     }
     @Bean
