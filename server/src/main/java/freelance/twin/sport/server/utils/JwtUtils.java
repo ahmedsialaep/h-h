@@ -2,6 +2,8 @@ package freelance.twin.sport.server.utils;
 
 import freelance.twin.sport.server.user.entity.User;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
@@ -31,6 +33,17 @@ public class JwtUtils {
     private long verification2FaDuration;
     @Value("${app.security.cookieName}")
     public String COOKIE_NAME;
+    @Value("${app.security.cookieDomain}")
+    private String cookieDomain;
+
+    @Value("${app.security.cookieSecure}")
+    private boolean cookieSecure;
+
+    @Value("${app.security.cookiePath}")
+    private String cookiePath;
+
+    @Value("${app.security.cookieSite}")
+    private String cookieSite;
 
     public JwtUtils(
             @Value("${jwt.secret}") String secret,
@@ -45,24 +58,6 @@ public class JwtUtils {
         this.reservationExpiration = reservationExpiration;
     }
 
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
-
-    public String extractDeviceType(String token) {
-        return extractClaim(token, claims -> claims.get("deviceType", String.class));
-    }
-
-    public String extractRole(String token) {
-        Claims claims = extractAllClaims(token);
-        Object value = claims.get("role");
-        if (value == null) return null;
-        return value.toString();
-    }
-    public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
-    }
-
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         return claimsResolver.apply(extractAllClaims(token));
     }
@@ -75,27 +70,44 @@ public class JwtUtils {
                 .getPayload();
     }
 
-    public Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-    public UUID extractUserId(String token) {
-        Claims claims = extractAllClaims(token);
-        Object value = claims.get("userId");
 
+    public String extractUsername(HttpServletRequest request) {
+        String token = extractTokenFromCookies(request);
+        if (token == null) return null;
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractRole(HttpServletRequest request) {
+        String token = extractTokenFromCookies(request);
+        if (token == null) return null;
+        Claims claims = extractAllClaims(token);
+        Object value = claims.get("role");
         if (value == null) return null;
-
-        try {
-            return UUID.fromString(value.toString());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        return value.toString();
     }
-    public Boolean extractVerified2FA(String token) {
-        Claims claims = extractAllClaims(token);
-        Object value = claims.get("verified2Fa");
-        if (value instanceof Boolean b) return b;
-        if (value instanceof String s) return Boolean.parseBoolean(s);
-        return false;
+
+    public String extractDeviceType(HttpServletRequest request) {
+        String token = extractTokenFromCookies(request);
+        if (token == null) return null;
+        return extractClaim(token, claims -> claims.get("deviceType", String.class));
+    }
+
+    public Date extractExpiration(HttpServletRequest request) {
+        String token = extractTokenFromCookies(request);
+        if (token == null) return null;
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public Boolean extractVerified2FA(HttpServletRequest request) {
+        String token = extractTokenFromCookies(request);
+        if (token == null) return false;
+        return extractClaim(token, claims -> claims.get("verified2Fa", Boolean.class));
+    }
+
+    public UUID extractUserId(HttpServletRequest request) {
+        String token = extractTokenFromCookies(request);
+        if (token == null) return null;
+        return extractUserId(request);
     }
     public String generateToken(UserDetails userDetails, String deviceType, User user) {
         long expiration = "mobile".equalsIgnoreCase(deviceType) ? mobileExpiration : computerExpiration;
@@ -112,14 +124,27 @@ public class JwtUtils {
                 .compact();
     }
 
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    public boolean validateToken(HttpServletRequest request) {
+        String token = extractTokenFromCookies(request);
+        if (token == null) return false;
+
+        try {
+            extractAllClaims(token);
+            return true;
+        } catch (ExpiredJwtException ex) {
+            throw ex;
+        } catch (JwtException ex) {
+            System.out.println("auth exception: "+ex.getMessage());
+        }
+        return false;
     }
     public String extractTokenFromCookies(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
-        for (Cookie cookie : request.getCookies()) {
-            if (COOKIE_NAME.equals(cookie.getName())) return cookie.getValue();
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (COOKIE_NAME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
         }
         return null;
     }
@@ -131,11 +156,14 @@ public class JwtUtils {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie
                 .from(COOKIE_NAME, value)
                 .httpOnly(true)
-                .secure(false)
-                .path("/")
+                .secure(cookieSecure)
+                .path(cookiePath)
                 .maxAge(expiration)
-                .sameSite("Lax");
+                .sameSite(cookieSite);
 
+        if (cookieDomain != null && !cookieDomain.isEmpty()) {
+            builder.domain(cookieDomain);
+        }
 
         ResponseCookie cookie = builder.build();
 
@@ -146,26 +174,17 @@ public class JwtUtils {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie
                 .from(name, "")
                 .httpOnly(true)
-                .secure(false)
-                .path("/")
+                .secure(cookieSecure)
+                .path(cookiePath)
                 .maxAge(0)
-                .sameSite("Lax");
+                .sameSite(cookieSite);
 
-
+        if (cookieDomain != null && !cookieDomain.isEmpty()) {
+            builder.domain(cookieDomain);
+        }
 
         ResponseCookie cookie = builder.build();
 
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-    }
-    public void buildClearCookieHttpOnly(HttpServletResponse response, String name, boolean httpOnly) {
-        ResponseCookie cookie = ResponseCookie
-                .from(name, "")
-                .httpOnly(httpOnly)
-                .secure(false)
-                .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
-                .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
     public boolean checkIs2FaVerified(Instant last2FaVerification, String codeVerification2FA) {

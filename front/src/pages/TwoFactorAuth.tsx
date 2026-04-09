@@ -8,19 +8,17 @@ import { verify2FA, send2FA } from "@/store/authSlice";
 
 const TwoFactorAuth = () => {
     const [otp, setOtp] = useState("");
-    const [email] = useState(() => {
-        const user = useAppSelector((state) => state.auth.user);
-        return user ? user.username : ""
-    })
-
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
 
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const { toast } = useToast();
+    
+    // ← top level, not inside useState
+    const user = useAppSelector((state) => state.auth.user);
+    const email = user?.username ?? "";
 
-    // ✅ VERIFY 2FA
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -36,14 +34,21 @@ const TwoFactorAuth = () => {
         setLoading(true);
 
         try {
-            await dispatch(verify2FA({ verificationCode: otp })).unwrap();
+            const verifiedUser = await dispatch(verify2FA({ verificationCode: otp })).unwrap();
 
             toast({
                 title: "Vérification réussie!",
                 description: "Votre identité a été confirmée."
             });
 
-            navigate("/"); // redirect after success
+            // Redirect based on role after 2FA
+            const role = verifiedUser.role?.toUpperCase();
+            if (role === "ADMIN_TWIN") {
+                navigate("/admin", { replace: true });
+            } else {
+                navigate("/", { replace: true });
+            }
+
         } catch (error: any) {
             toast({
                 title: "Erreur",
@@ -55,13 +60,10 @@ const TwoFactorAuth = () => {
         }
     };
 
-    // ✅ RESEND 2FA
     const handleResend = async () => {
         setResending(true);
-
         try {
             await dispatch(send2FA()).unwrap();
-
             toast({
                 title: "Code renvoyé",
                 description: `Un nouveau code a été envoyé à ${email}.`

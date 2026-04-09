@@ -34,6 +34,7 @@ import Orders from "./pages/Orders";
 import { fetchCart } from "./store/CartSlice";
 import OrderTracking from "./pages/OrderTracking";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
+import Signup from "./pages/Signup";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +43,7 @@ const ProtectedRoute = ({ children, adminOnly = false }: {
     adminOnly?: boolean;
 }) => {
     const { user } = useAppSelector((state) => state.auth);
-    
+
     if (!user) return <Navigate to="/login" replace />;
     if (!user.verified2FA) return <Navigate to="/2fa" replace />;
     if (adminOnly && user.role === "STANDARD") return <Loading fullScreen size="lg" />;
@@ -72,10 +73,10 @@ const AppContent = () => {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.auth.user);
     useEffect(() => {
-        
-        api.get("/auth/csrf").finally(() => {
-            if (!user) dispatch(restoreSession());
-        });
+
+
+        if (!user) dispatch(restoreSession());
+
     }, []);
     useEffect(() => {
         if (user) {
@@ -112,8 +113,13 @@ const AppContent = () => {
                             <Route path="/new-arrivals" element={<NewArrivals />} />
                             <Route path="/about" element={<About />} />
                             <Route path="/login" element={
-                                <PublicRoute>       
+                                <PublicRoute>
                                     <Login />
+                                </PublicRoute>
+                            } />
+                            <Route path="/sign-up" element={
+                                <PublicRoute>
+                                    <Signup />
                                 </PublicRoute>
                             } />
                             <Route path="/2fa" element={

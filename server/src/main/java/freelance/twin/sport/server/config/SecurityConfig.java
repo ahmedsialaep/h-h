@@ -53,10 +53,11 @@ public class SecurityConfig {
 
 
     @Bean
-    public CsrfTokenRepository csrfTokenRepository() {
-        return CookieCsrfTokenRepository.withHttpOnlyFalse();
+    public CookieCsrfTokenRepository csrfTokenRepository() {
+        CookieCsrfTokenRepository repo = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        repo.setCookiePath("/");
+        return repo;
     }
-
     @Bean
     public CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler() {
         return new CsrfTokenRequestAttributeHandler();
@@ -102,8 +103,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.GET, "/magasin").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/**", "/brand/**", "/product-type/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN_TWIN")
-                        .requestMatchers("/orders/**", "/checkout/**", "/payment/**", "/profile/**").hasAnyRole("STANDARD", "ADMIN_TWIN")
+                        .requestMatchers("/admin/**").hasAuthority("ADMIN_TWIN")
+                        .requestMatchers("/orders/**", "/checkout/**", "/payment/**", "/profile/**").hasAnyAuthority("STANDARD", "ADMIN_TWIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

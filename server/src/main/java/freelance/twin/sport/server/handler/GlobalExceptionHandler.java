@@ -19,11 +19,11 @@ public class GlobalExceptionHandler {
     private final UserService authService;
 
     @ExceptionHandler(ExpiredJwtException.class)
-    public ResponseEntity<?> handleExpiredJwt(HttpServletRequest request,
+    public ResponseEntity<?> handleExpiredJwt(
                                               HttpServletResponse response) {
 
 
-        authService.logout(request, response);
+        authService.logout(response);
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Session expired"));

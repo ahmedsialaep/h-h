@@ -85,8 +85,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-        userService.logout(request, response);
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        userService.logout(response);
 
         return ResponseEntity.ok(Map.of(
                 "message", "Déconnexion réussie",

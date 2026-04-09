@@ -1,6 +1,8 @@
 package freelance.twin.sport.server.user.service;
 
 import freelance.twin.sport.server.user.dto.Verify2FaRequest;
+import freelance.twin.sport.server.user.entity.Role;
+import freelance.twin.sport.server.user.entity.TwofaMethod;
 import freelance.twin.sport.server.user.entity.User;
 import freelance.twin.sport.server.user.repository.UserRepository;
 import freelance.twin.sport.server.user.service.twofa.ITowFaMessageService;
@@ -36,6 +38,7 @@ public class UserService {
     private final TokenStoreService tokenStoreService;
     private final AuthenticationManager authenticationManager;
     private final TowFaMessageFactory towFaMessageFactory;
+    private final CustomUserDetailsService customUserDetailsService;
 
 
     public void removeUser(Long idUser) {
@@ -84,6 +87,8 @@ public class UserService {
     public User saveUser(User user) {
 
         user.setPwd(passwordEncoder.encode(user.getPwd()));
+        user.setTwoFaMethod(TwofaMethod.EMAIL);
+        user.setRoleUser(Role.STANDARD);
         return userRepository.save(user);
     }
 
@@ -92,29 +97,14 @@ public class UserService {
     }
 
 
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
+    public void logout( HttpServletResponse response) {
 
-        String token = jwtUtils.extractTokenFromCookies(request);
+        SecurityContextHolder.clearContext();
 
-        if (token != null) {
-            String username = jwtUtils.extractUsername(token);
-            String role = jwtUtils.extractRole(token);
-            String userAgent = request.getHeader("User-Agent");
-            String deviceType = userAgent != null && userAgent.toLowerCase().contains("mobile")
-                    ? "mobile"
-                    : "computer";
 
-            if ("ADMIN_TWIN".equalsIgnoreCase(role)) {
-                boolean isLatest = tokenStoreService.isLatestToken(username, token, deviceType);
-                if (isLatest) {
-                    tokenStoreService.invalidateToken(username, deviceType);
-                }
-            }
-            jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
-            jwtUtils.buildClearCookieHttpOnly(response, "XSRF-TOKEN", false);
-            jwtUtils.buildClearCookie(response, "JSESSIONID");
-
-        }
+        jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
+        jwtUtils.buildClearCookie(response, "XSRF-TOKEN");
+        jwtUtils.buildClearCookie(response, "JSESSIONID");
 
     }
 
@@ -159,31 +149,39 @@ public class UserService {
                           HttpServletResponse httpResponse) {
 
         User user = getCurrentUser();
+
         String userAgent = httpRequest.getHeader("User-Agent");
         boolean isComputer = userAgent != null && !userAgent.toLowerCase().contains("mobile");
         String deviceType = isComputer ? "computer" : "mobile";
+
         if (user == null) {
             throw new RuntimeException("No authenticated user found.");
         }
-
         if (user.getCodeVerification2FA() == null) {
             throw new RuntimeException("No 2FA code found. Please request a new one.");
         }
-
         if (!user.getCodeVerification2FA().equalsIgnoreCase(request.getVerificationCode())) {
             throw new RuntimeException("Invalid 2FA code.");
         }
-
         if (user.getTwoFaCodeExpiry().isBefore(Instant.now())) {
             throw new RuntimeException("2FA code expired.");
         }
 
         user.setCodeVerification2FA(null);
+        user.setTwoFaCodeExpiry(null);
         user.setLast2FaVerification(Instant.now());
 
         User savedUser = userRepository.save(user);
 
-        jwtUtils.buildJwtCookie(jwtUtils.COOKIE_NAME, deviceType,httpResponse);
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getUsername());
+        String newJwt = jwtUtils.generateToken(userDetails, deviceType, savedUser);
+
+
+        if ("ADMIN_TWIN".equalsIgnoreCase(savedUser.getRoleUser().name())) {
+            tokenStoreService.storeToken(savedUser.getUsername(), newJwt, deviceType);
+        }
+
+        jwtUtils.buildJwtCookie(newJwt, deviceType, httpResponse);
 
         return savedUser;
     }
@@ -215,10 +213,9 @@ public class UserService {
 
         if (isAdmin && !force) {
             if (tokenStoreService.hasActiveSession(username, deviceType)) {
-                String existingToken = tokenStoreService.getToken(username, deviceType);
 
                 try {
-                    if (jwtUtils.validateToken(existingToken, userDetails)) {
+                    if (jwtUtils.validateToken(request)) {
                         throw new RuntimeException("ACTIVE_SESSION_" + deviceType);
                     }
                 } catch (ExpiredJwtException e) {
@@ -238,9 +235,9 @@ public class UserService {
                 userDetails,
 
                 deviceType,
-                user
+                authenticatedUser
         );
-
+        System.out.println(authenticatedUser.getRoleUser().name());
 
         if (isAdmin) {
             tokenStoreService.storeToken(username, jwt, deviceType);
@@ -268,12 +265,12 @@ public class UserService {
             throw new RuntimeException("NO_SESSION");
         }
         User user = getCurrentUser();
-        String username = jwtUtils.extractUsername(token);
+        String username = jwtUtils.extractUsername(request);
         String role = user.getRoleUser().toString();
 
         UUID userId = user.getId();
-        Boolean verified2FA = jwtUtils.extractVerified2FA(token);
-        String deviceType = jwtUtils.extractDeviceType(token);
+        Boolean verified2FA = jwtUtils.extractVerified2FA(request);
+        String deviceType = jwtUtils.extractDeviceType(request);
 
         if ("ADMIN_TWIN".equalsIgnoreCase(role)) {
             String userAgent = request.getHeader("User-Agent");
@@ -282,7 +279,7 @@ public class UserService {
                     : "computer";
 
             if (!tokenStoreService.isLatestToken(username, token, dt)) {
-                logout(request, response);
+                logout(response);
                 throw new RuntimeException("SESSION_INVALIDATED");
             }
         }

@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -19,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 
 import java.io.IOException;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -27,75 +29,58 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final TokenStoreService tokenStoreService;
 
-
-
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String jwt = jwtUtils.extractTokenFromCookies(request);
-        String uri = request.getRequestURI();
-
-        if (uri.contains("/auth/login") || uri.contains("/auth/register") ||
-                uri.contains("/auth/logout") || uri.contains("/auth/csrf") ||
-                uri.contains("/auth/validate-session")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        if (jwt == null || jwt.isEmpty()) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String username = null;
+        String username = "";
 
         try {
-            username = jwtUtils.extractUsername(jwt);
-            String role = jwtUtils.extractRole(jwt);
-            String deviceType = jwtUtils.extractDeviceType(jwt);
+            // validateToken returns false if no cookie or invalid — no exception thrown
+            if (jwtUtils.validateToken(request)) {
 
-            if ("ADMIN_TWIN".equalsIgnoreCase(role)) {
-                boolean isLatest = tokenStoreService.isLatestToken(username, jwt, deviceType);
+                username = jwtUtils.extractUsername(request);
+                String role = jwtUtils.extractRole(request);
+                String deviceType = jwtUtils.extractDeviceType(request);
 
-                if (!isLatest) {
+                if ("ADMIN_TWIN".equalsIgnoreCase(role)) {
+                    boolean isLatest = tokenStoreService.isLatestToken(username,
+                            jwtUtils.extractTokenFromCookies(request), deviceType);
 
-                    boolean hasAnySession = tokenStoreService.hasActiveSession(username, deviceType);
+                    if (!isLatest) {
+                        boolean hasAnySession = tokenStoreService.hasActiveSession(username, deviceType);
+                        if (hasAnySession) {
+                            jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                                    "Admin session invalidated. Please log in again.");
+                            return;
+                        } else {
 
-                    if (hasAnySession) {
-
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                "Admin session invalidated. Please log in again.");
-                        return;
-                    } else {
-
-                        tokenStoreService.storeToken(username, jwt, deviceType);
+                            tokenStoreService.storeToken(username,
+                                    jwtUtils.extractTokenFromCookies(request), deviceType);
+                        }
                     }
                 }
+
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
         } catch (ExpiredJwtException ex) {
+            jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Session expired.");
             return;
         } catch (Exception ex) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token.");
-            return;
-        }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-                boolean valid = jwtUtils.validateToken(jwt, userDetails);
-
-                if (valid) {
-                    var auth = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
-            } catch (Exception ex) {
-                System.out.println(">>> USER LOAD ERROR: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
-            }
         }
 
         filterChain.doFilter(request, response);

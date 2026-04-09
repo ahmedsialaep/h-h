@@ -17,7 +17,7 @@ import java.util.List;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+
     @Override
     public UserDetails loadUserByUsername(String username) {
 
@@ -26,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPwd(),
-                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRoleUser().name()))
+                List.of(new SimpleGrantedAuthority(user.getRoleUser().toString()))
         );
     }
 }
