@@ -131,7 +131,7 @@ public class UserService {
 
             if (notificationService.send2faVerificationCode(user, verificationCode)) {
                 user.setCodeVerification2FA(verificationCode);
-                user.setTwoFaCodeExpiry(Instant.now().plusSeconds(120));
+                user.setTwoFaCodeExpiry(Instant.now().plusSeconds(600));
                 userRepository.save(user);
                 return true;
             }
@@ -251,7 +251,7 @@ public class UserService {
         return Map.of(
                 "userId", authenticatedUser.getId(),
                 "username", authenticatedUser.getUsername(),
-                "role", role,
+                "isAdmin", isAdmin,
                 "deviceType", deviceType,
                 "verified2FA", verified2FA,
                 "message", verified2FA ? "Login successful" : "2FA requis"
@@ -272,7 +272,8 @@ public class UserService {
         Boolean verified2FA = jwtUtils.extractVerified2FA(request);
         String deviceType = jwtUtils.extractDeviceType(request);
 
-        if ("ADMIN_TWIN".equalsIgnoreCase(role)) {
+        boolean isAdmin = "ADMIN_TWIN".equalsIgnoreCase(role);
+        if (isAdmin) {
             String userAgent = request.getHeader("User-Agent");
             String dt = userAgent != null && userAgent.toLowerCase().contains("mobile")
                     ? "mobile"
@@ -291,6 +292,7 @@ public class UserService {
                         "username", username,
                         "deviceType", deviceType,
                         "nom", user.getNom() != null ? user.getNom() : "",
+                        "isAdmin", isAdmin,
                         "prenom", user.getPrenom() != null ? user.getPrenom() : "",
                         "verified2FA", verified2FA
                 )

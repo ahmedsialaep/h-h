@@ -106,11 +106,11 @@ public class AuthController {
                                                          HttpServletResponse httpResponse) {
 
         User user = userService.verify2Fa(request, httpRequest, httpResponse);
-
+        boolean isAdmin = "ADMIN_TWIN".equalsIgnoreCase(user.getRoleUser().name());
         return ResponseEntity.ok(Map.of(
                 "userId", user.getId(),
                 "username", user.getUsername(),
-                "role", user.getRoleUser().name(),
+                "isAdmin", isAdmin,
                 "verified2FA", true,
                 "message", "2FA verification successful"
         ));

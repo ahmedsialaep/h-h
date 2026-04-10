@@ -8,7 +8,7 @@ export interface User {
     prenom: string;
     userId: string;
     username: string;
-    role: string;
+    isAdmin: boolean;
     deviceType: string;
     verified2FA: boolean;
 }
@@ -42,13 +42,14 @@ const loadUserFromStorage = (): User | null => {
         const stored = localStorage.getItem(USER_KEY);
         if (!stored) return null;
         const u = JSON.parse(stored);
+        console.log(stored)
         return {
             userId: u.userId,
             username: u.username,
             nom: u.nom ?? "",
             prenom: u.prenom ?? "",
             deviceType: u.deviceType,
-            role: u.role ?? "",
+            isAdmin: u.isAdmin ?? "",
             verified2FA: u.verified2FA
         };
     } catch {
@@ -111,7 +112,7 @@ export const loginUser = createAsyncThunk<
         const user: User = {
             userId: data.userId,
             username: data.username,
-            role: data.role ?? "",
+            isAdmin: data.isAdmin ?? "",
             deviceType: data.deviceType ?? "",
             verified2FA: data.verified2FA ?? false,  // ← flat, not data.user.verified2FA
             nom: data.nom ?? "",
@@ -152,7 +153,7 @@ export const restoreSession = createAsyncThunk<void, void>(
                     const user: User = {
                         userId: u.userId,
                         username: u.username,
-                        role: u.role ?? "", 
+                        isAdmin: u.isAdmin ?? "", 
                         deviceType: u.deviceType ?? "",
                         verified2FA: u.verified2FA ?? false,
                         nom: u.nom ?? "",
@@ -173,7 +174,7 @@ export const restoreSession = createAsyncThunk<void, void>(
 );
 
 const initialState: AuthState = {
-    user: loadUserFromStorage(),
+    user: null,
     loading: false,
     restoringSession: false,
     error: null,

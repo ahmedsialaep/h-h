@@ -40,4 +40,14 @@ public class User {
 
     private Instant twoFaCodeExpiry;
 
+    private String numTel;
+
+    private Long CodePostal;
+
+    private String ville;
+
+    private String region;
+
+
+
 }

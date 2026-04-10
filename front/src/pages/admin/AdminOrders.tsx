@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { Status, DeliveryMethod, CommandeDto } from "@/models/Commande";
 import { fetchCommandes, setFilters, setPage, updateCommandeStatus } from "@/store/CommandeSlice";
 import { IMAGE_API_URL } from "@/config/config";
-import { ALL_STATUSES, STATUS_COLORS, STATUS_LABELS } from "@/models/constants/StatusConstants";
+import { ALL_STATUSES, STATUS_BY_DELIVERY_METHOD, STATUS_COLORS, STATUS_LABELS } from "@/models/constants/StatusConstants";
 import EnhancedSelect from "@/components/admin/EnhancedSelect";
 
 const AdminOrders = () => {
@@ -22,14 +22,14 @@ const AdminOrders = () => {
   };
 
   useEffect(() => {
-    
+
     dispatch(fetchCommandes(filters));
   }, [dispatch, filters]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearch(val);
-    
+
     dispatch(setFilters({ search: val.trim() || null, page: 0 }));
   };
 
@@ -91,8 +91,8 @@ const AdminOrders = () => {
             key={s}
             onClick={() => toggleStatus(s)}
             className={`text-xs font-heading uppercase tracking-wider px-3 py-1.5 rounded-full border transition-all ${selectedStatuses.includes(s)
-                ? STATUS_COLORS[s]
-                : "bg-card text-muted-foreground border-border hover:text-foreground"
+              ? STATUS_COLORS[s]
+              : "bg-card text-muted-foreground border-border hover:text-foreground"
               }`}
           >
             {STATUS_LABELS[s]}
@@ -142,7 +142,10 @@ const AdminOrders = () => {
               <EnhancedSelect
                 label=""
                 value={order.status}
-                options={ALL_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))}
+                options={STATUS_BY_DELIVERY_METHOD[order.deliveryMethod].map((s) => ({
+                  value: s,
+                  label: STATUS_LABELS[s],
+                }))}
                 onChange={(val) => handleStatusChange(order.id, val as Status)}
                 className="w-48"
               />
@@ -209,8 +212,8 @@ const AdminOrders = () => {
               key={idx}
               onClick={() => handlePageChange(idx)}
               className={`w-9 h-9 rounded-lg font-heading text-xs font-bold transition-colors ${idx === currentPage
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground"
                 }`}
             >
               {idx + 1}

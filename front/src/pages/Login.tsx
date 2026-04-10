@@ -30,7 +30,7 @@ const Login = () => {
                 description: "Bienvenue sur Jumeaux Sports."
             });
 
-            const role = user.role?.toUpperCase();
+            const ISADMIN = user.isAdmin;
 
             if (!user.verified2FA) {
                 try {
@@ -44,7 +44,7 @@ const Login = () => {
                     // Show error message to user
                 }
             } else {
-                if (role === "ADMIN_TWIN") navigate("/admin", { replace: true });
+                if (ISADMIN) navigate("/admin", { replace: true });
                 else navigate("/", { replace: true });
             }
 

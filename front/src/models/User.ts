@@ -10,5 +10,8 @@ export interface User {
   roleUser: Role;
   username: string;
   img: string | null;
-  
+  numTel: string;
+  CodePostal: string;
+  ville: string;
+  region:string;
 }

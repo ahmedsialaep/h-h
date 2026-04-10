@@ -19,6 +19,7 @@ import freelance.twin.sport.server.stockReservation.entity.StockReservation;
 import freelance.twin.sport.server.stockReservation.service.StockReservationService;
 import freelance.twin.sport.server.user.entity.User;
 import freelance.twin.sport.server.user.repository.UserRepository;
+import freelance.twin.sport.server.user.service.status_order.OrderStatusMessageService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class CommandeService {
     private final ProductRepository productRepository;
     private final ProductVarsRepository varsRepository;
     private final StockReservationService reservationService;
+    private final OrderStatusMessageService orderStatusMessageService;
     // Retrieve all commandes
     public List<Commande> retrieveAllCommandes() {
         return commandeRepository.findAll();
@@ -143,7 +145,7 @@ public class CommandeService {
             }
 
             case ANNULEE -> {
-                if (currentStatus == Status.CONFIRMEE || currentStatus == Status.EXPEDIEE) {
+                if ( currentStatus == Status.EN_ATTENTE ||currentStatus == Status.CONFIRMEE || currentStatus == Status.EXPEDIEE) {
                     commande.getItems().forEach(item -> {
                         ProductVars variant = item.getVariant();
 

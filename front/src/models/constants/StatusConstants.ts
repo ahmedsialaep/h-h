@@ -25,3 +25,20 @@ export const DELIVERY_METHOD_LABELS: Record<DeliveryMethod, string> = {
   DELIVERY: "Livraison",
 };
 export const ALL_STATUSES = Object.values(Status);
+
+export const STATUS_BY_DELIVERY_METHOD: Record<DeliveryMethod, Status[]> = {
+  DELIVERY: [
+    Status.EN_ATTENTE,
+    Status.CONFIRMEE,
+    Status.EXPEDIEE,
+    Status.LIVREE,
+    Status.ANNULEE,
+  ],
+  PICKUP: [
+    Status.EN_ATTENTE,
+    Status.CONFIRMEE,
+    Status.PRETE_RETRAIT,
+    Status.RECUPEREE,
+    Status.ANNULEE,
+  ],
+};

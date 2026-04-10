@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="font-family:'DM Sans',Arial,sans-serif;background-color:#f4f4f5;padding:40px 0;margin:0;">
+
+<div style="max-width:520px;margin:0 auto;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,hsl(22,100%,50%),hsl(22,100%,40%));padding:28px 24px;text-align:center;">
+        <h1 style="color:#ffffff;font-size:22px;font-weight:800;margin:0;font-family:'Barlow Condensed',Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;">
+            📦 Mise à jour de commande
+        </h1>
+        <p style="color:rgba(255,255,255,0.85);font-size:13px;margin:8px 0 0;"
+           th:text="${orderId}">CMD-2025-001</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:28px;">
+
+        <p style="color:#333;font-size:15px;margin:0 0 16px;">
+            Bonjour <strong th:text="${customerName}">Client</strong>,
+        </p>
+
+        <!-- Status badge -->
+        <div th:style="'background-color:'+${statusBgColor}+';border:1px solid '+${statusColor}+'33;border-radius:8px;padding:14px 18px;margin:0 0 24px;text-align:center;'">
+            <p th:style="'color:'+${statusColor}+';font-size:16px;font-weight:700;margin:0;'"
+               th:text="${statusLabel}">Statut</p>
+            <p style="color:#666;font-size:13px;margin:6px 0 0;line-height:1.5;"
+               th:text="${statusMessage}">Message</p>
+        </div>
+
+        <!-- Progress tracker — DELIVERY (EN_ATTENTE › CONFIRMEE › EXPEDIEE › LIVREE) -->
+        <div th:if="${!isPickup and !isAnnulee}"
+             style="display:flex;justify-content:space-between;margin:0 0 28px;padding:0 4px;">
+            <th:block th:each="step,iter : ${ {'En attente'|| 'Confirmée' || 'Expédiée' || 'Livrée'} }">
+                <div style="text-align:center;flex:1;position:relative;">
+                    <!-- connector line -->
+                    <div th:if="${iter.index > 0}"
+                         th:style="'position:absolute;top:14px;left:-12px;right:calc(50% + 10px);height:3px;border-radius:2px;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e0e0e0')+';'">
+                    </div>
+                    <!-- circle -->
+                    <div th:style="'width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e8e8e8')+';'">
+                        <span th:style="'font-size:11px;color:'+(${iter.index} le ${currentStepIndex} ? '#fff' : '#aaa')+';'">✓</span>
+                    </div>
+                    <span th:style="'font-size:10px;font-weight:'+(${iter.index} le ${currentStepIndex} ? '600' : '400')+';color:'+(${iter.index} le ${currentStepIndex} ? '#333' : '#aaa')+';'"
+                          th:text="${step}">Step</span>
+                </div>
+            </th:block>
+        </div>
+
+        <!-- Progress tracker — PICKUP (CONFIRMEE › PRETE_RETRAIT › RECUPEREE) -->
+        <div th:if="${isPickup}"
+             style="display:flex;justify-content:space-between;margin:0 0 28px;padding:0 4px;">
+            <th:block th:each="step,iter : ${ {'Confirmée'||'Prête'||'Récupérée'} }">
+                <div style="text-align:center;flex:1;position:relative;">
+                    <div th:if="${iter.index > 0}"
+                         th:style="'position:absolute;top:14px;left:-12px;right:calc(50% + 10px);height:3px;border-radius:2px;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e0e0e0')+';'">
+                    </div>
+                    <div th:style="'width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e8e8e8')+';'">
+                        <span th:style="'font-size:11px;color:'+(${iter.index} le ${currentStepIndex} ? '#fff' : '#aaa')+';'">✓</span>
+                    </div>
+                    <span th:style="'font-size:10px;font-weight:'+(${iter.index} le ${currentStepIndex} ? '600' : '400')+';color:'+(${iter.index} le ${currentStepIndex} ? '#333' : '#aaa')+';'"
+                          th:text="${step}">Step</span>
+                </div>
+            </th:block>
+        </div>
+
+        <!-- Cancelled notice — no tracker -->
+        <div th:if="${isAnnulee}"
+             style="background-color:hsl(0,70%,96%);border-left:4px solid hsl(0,70%,50%);border-radius:0 6px 6px 0;padding:12px 16px;margin:0 0 24px;">
+            <p style="font-size:13px;color:#555;margin:0;line-height:1.6;">
+                ❌ Cette commande a été annulée. Contactez notre support pour plus d'informations.
+            </p>
+        </div>
+
+        <!-- Order items -->
+        <div style="background-color:#fafafa;border-radius:8px;padding:16px 18px;margin:0 0 20px;">
+            <p style="font-size:13px;font-weight:700;color:#333;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.5px;">
+                Détails de la commande
+            </p>
+
+            <th:block th:each="item,iter : ${items}">
+                <div th:style="'display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:'+(${!iter.last} ? '1px solid #eee' : 'none')+';'">
+                    <div>
+                        <p style="font-size:14px;color:#333;margin:0;font-weight:500;"
+                           th:text="${item.product.name}">Produit</p>
+                        <p style="font-size:12px;color:#999;margin:2px 0 0;"
+                           th:text="'Qté: ' + ${item.quantity}">Qté: 1</p>
+                    </div>
+                    <p style="font-size:14px;color:#333;font-weight:600;margin:0;"
+                       th:text="${#numbers.formatDecimal(item.unitPrice * item.quantity, 1, 'COMMA', 0, 'POINT')} + ' MAD'">0 MAD</p>
+                </div>
+            </th:block>
+
+            <!-- Total -->
+            <div style="display:flex;justify-content:space-between;padding-top:12px;margin-top:8px;border-top:2px solid #eee;">
+                <p style="font-size:15px;font-weight:700;color:#333;margin:0;">Total</p>
+                <p style="font-size:15px;font-weight:700;color:hsl(22,100%,50%);margin:0;"
+                   th:text="${#numbers.formatDecimal(total, 1, 'COMMA', 0, 'POINT')} + ' MAD'">0 MAD</p>
+            </div>
+        </div>
+
+        <!-- Dates -->
+        <div style="display:flex;gap:12px;margin:0 0 24px;">
+            <div style="flex:1;background-color:#f5f5f5;border-radius:6px;padding:10px 14px;">
+                <p style="font-size:11px;color:#999;margin:0 0 2px;text-transform:uppercase;">Date commande</p>
+                <p style="font-size:13px;color:#333;font-weight:600;margin:0;" th:text="${orderDate}">-</p>
+            </div>
+            <!-- Delivery: show city / Pickup: show "En magasin" -->
+            <div th:if="${!isPickup}" style="flex:1;background-color:#f5f5f5;border-radius:6px;padding:10px 14px;">
+                <p style="font-size:11px;color:#999;margin:0 0 2px;text-transform:uppercase;">Ville</p>
+                <p style="font-size:13px;color:#333;font-weight:600;margin:0;" th:text="${city}">-</p>
+            </div>
+            <div th:if="${isPickup}" style="flex:1;background-color:#f5f5f5;border-radius:6px;padding:10px 14px;">
+                <p style="font-size:11px;color:#999;margin:0 0 2px;text-transform:uppercase;">Mode</p>
+                <p style="font-size:13px;color:#333;font-weight:600;margin:0;">Retrait en magasin</p>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div th:if="${!isAnnulee}" style="text-align:center;margin:0 0 24px;">
+            <a href="#"
+               style="display:inline-block;background-color:hsl(22,100%,50%);color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;font-family:'Barlow Condensed',Arial,sans-serif;text-transform:uppercase;letter-spacing:0.5px;">
+                Suivre ma commande
+            </a>
+        </div>
+
+        <hr style="border:none;border-top:1px solid #eee;margin:20px 0;"/>
+
+        <p style="color:#aaa;font-size:11px;text-align:center;line-height:1.5;margin:0;">
+            Cet e-mail a été envoyé automatiquement. Merci de ne pas y répondre.<br/>
+            © 2025 SneakPeak. Tous droits réservés.
+        </p>
+
+    </div>
+</div>
+
+</body>
+</html>

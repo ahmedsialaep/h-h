@@ -41,9 +41,9 @@ const TwoFactorAuth = () => {
                 description: "Votre identité a été confirmée."
             });
 
-            // Redirect based on role after 2FA
-            const role = verifiedUser.role?.toUpperCase();
-            if (role === "ADMIN_TWIN") {
+            
+            const isAdmin = verifiedUser.isAdmin;
+            if (isAdmin) {
                 navigate("/admin", { replace: true });
             } else {
                 navigate("/", { replace: true });

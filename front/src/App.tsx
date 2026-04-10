@@ -42,18 +42,18 @@ const ProtectedRoute = ({ children, adminOnly = false }: {
     children: React.ReactNode;
     adminOnly?: boolean;
 }) => {
-    const { user } = useAppSelector((state) => state.auth);
-
+    const { user, restoringSession } = useAppSelector((state) => state.auth);
+    if(restoringSession) return <Loading/>;
     if (!user) return <Navigate to="/login" replace />;
     if (!user.verified2FA) return <Navigate to="/2fa" replace />;
-    if (adminOnly && user.role === "STANDARD") return <Loading fullScreen size="lg" />;
-    if (adminOnly && user.role !== "ADMIN_TWIN") return <Navigate to="/" replace />;
+    if (adminOnly && !user.isAdmin) return <Loading fullScreen size="lg" />;
+    if (adminOnly && !user.isAdmin) return <Navigate to="/" replace />;
 
     return <>{children}</>;
 };
 const TwoFARoute = ({ children }: { children: React.ReactNode }) => {
-    const { user } = useAppSelector((state) => state.auth);
-
+    const { user, restoringSession } = useAppSelector((state) => state.auth);
+    if(restoringSession) return <Loading/>;
     if (!user) return <Navigate to="/login" replace />;
     if (user.verified2FA) return <Navigate to="/" replace />;
 
@@ -71,7 +71,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 };
 const AppContent = () => {
     const dispatch = useAppDispatch();
-    const { user, loading } = useAppSelector((state) => state.auth);
+    const { user, loading,restoringSession } = useAppSelector((state) => state.auth);
 
     useEffect(() => {
         dispatch(restoreSession());

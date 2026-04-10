@@ -9,7 +9,7 @@ import { useAppSelector } from "@/store/hook";
 
 const Profile = () => {
     const { toast } = useToast();
-    const user = useAppSelector((state) => state.auth.user); // ← from Redux, not localStorage
+    const user = useAppSelector((state) => state.auth.user); 
 
     const [form, setForm] = useState({
         nom: user?.nom ?? "",

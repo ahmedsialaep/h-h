@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ShoppingBag, Search, Menu, X, User, ChevronDown, LogOut, Warehouse, UserCog, Package } from "lucide-react";
-import { useCart } from "@/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { logoutUser } from "@/store/authSlice";
@@ -31,6 +30,7 @@ const navLinks = [
 
 const Navbar = () => {
   const { user } = useAppSelector((state) => state.auth);
+  
   const dispatch = useAppDispatch();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -120,10 +120,10 @@ const Navbar = () => {
             <div className="flex items-center gap-3">
               {/* Admin shortcut or Search */}
               <button
-                onClick={() => user?.role === "ADMIN_TWIN" ? navigate("/admin") : null}
+                onClick={() => user?.isAdmin ? navigate("/admin") : null}
                 className="p-2 text-muted-foreground hover:text-foreground transition-colors hidden md:block"
               >
-                {user?.role === "ADMIN_TWIN" ? <Warehouse size={20} /> : <Search size={20} />}
+                {user?.isAdmin ? <Warehouse size={20} /> : <Search size={20} />}
               </button>
 
               {/* User dropdown */}
@@ -164,7 +164,7 @@ const Navbar = () => {
                       <Package size={16} />
                       Mes Commandes
                     </DropdownMenuItem>
-                    {user.role === "ADMIN_TWIN" && (
+                    {user.isAdmin && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -253,7 +253,7 @@ const Navbar = () => {
                   <Link to="/orders" className="font-heading font-semibold text-lg tracking-wider uppercase text-muted-foreground hover:text-primary transition-colors">
                     Mes Commandes
                   </Link>
-                  {user.role === "ADMIN_TWIN" && (
+                  {user.isAdmin && (
                     <Link to="/admin" className="font-heading font-semibold text-lg tracking-wider uppercase text-muted-foreground hover:text-primary transition-colors">
                       Administration
                     </Link>
