@@ -1,8 +1,9 @@
-package freelance.twin.sport.server.user.service.status_order;
+package freelance.twin.sport.server.config.mail.status_order;
 
 import freelance.twin.sport.server.commande.entity.Commande;
 import freelance.twin.sport.server.commande.entity.Status;
 import freelance.twin.sport.server.user.entity.User;
+import freelance.twin.sport.server.user.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +15,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -25,6 +24,7 @@ public class EmailOrderStatusService implements OrderStatusMessageService {
 
     private final TemplateEngine templateEngine;
     private final JavaMailSender mailSender;
+    private final UserRepository userRepository;
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
@@ -86,7 +86,8 @@ public class EmailOrderStatusService implements OrderStatusMessageService {
     );
 
     @Override
-    public boolean sendOrderStatus(User to, Commande commande) {
+    public boolean sendOrderStatus(UUID toID, Commande commande) {
+        User to= userRepository.findUserById(toID);
         Status status = commande.getStatus();
 
         String recipientEmail = to != null
@@ -121,7 +122,7 @@ public class EmailOrderStatusService implements OrderStatusMessageService {
         context.setVariable("address",          commande.getAdress());
         context.setVariable("phone",            commande.getPhone());
 
-        String body = templateEngine.process("order-status-email", context);
+        String body = templateEngine.process("order-status-mail", context);
 
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();

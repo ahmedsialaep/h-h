@@ -35,18 +35,24 @@
         <!-- Progress tracker — DELIVERY (EN_ATTENTE › CONFIRMEE › EXPEDIEE › LIVREE) -->
         <div th:if="${!isPickup and !isAnnulee}"
              style="display:flex;justify-content:space-between;margin:0 0 28px;padding:0 4px;">
-            <th:block th:each="step,iter : ${ {'En attente'|| 'Confirmée' || 'Expédiée' || 'Livrée'} }">
+            <th:block th:each="step,iter : ${steps}">
                 <div style="text-align:center;flex:1;position:relative;">
-                    <!-- connector line -->
+
+                    <!-- connector -->
                     <div th:if="${iter.index > 0}"
-                         th:style="'position:absolute;top:14px;left:-12px;right:calc(50% + 10px);height:3px;border-radius:2px;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e0e0e0')+';'">
+                         th:style="'position:absolute;top:14px;left:-12px;right:calc(50% + 10px);height:3px;border-radius:2px;background-color:'+(${iter.index <= currentStepIndex} ? ${statusColor} : '#e0e0e0')+';'">
                     </div>
+
                     <!-- circle -->
-                    <div th:style="'width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e8e8e8')+';'">
-                        <span th:style="'font-size:11px;color:'+(${iter.index} le ${currentStepIndex} ? '#fff' : '#aaa')+';'">✓</span>
+                    <div th:style="'width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;background-color:'+(${iter.index <= currentStepIndex} ? ${statusColor} : '#e8e8e8')+';'">
+                        <span th:style="'font-size:11px;color:'+(${iter.index <= currentStepIndex} ? '#fff' : '#aaa')+';'">✓</span>
                     </div>
-                    <span th:style="'font-size:10px;font-weight:'+(${iter.index} le ${currentStepIndex} ? '600' : '400')+';color:'+(${iter.index} le ${currentStepIndex} ? '#333' : '#aaa')+';'"
-                          th:text="${step}">Step</span>
+
+                    <!-- label -->
+                    <span th:style="'font-size:10px;font-weight:'+(${iter.index <= currentStepIndex} ? '600' : '400')+';color:'+(${iter.index <= currentStepIndex} ? '#333' : '#aaa')+';'"
+                          th:text="${step}">
+                    </span>
+
                 </div>
             </th:block>
         </div>
@@ -54,17 +60,36 @@
         <!-- Progress tracker — PICKUP (CONFIRMEE › PRETE_RETRAIT › RECUPEREE) -->
         <div th:if="${isPickup}"
              style="display:flex;justify-content:space-between;margin:0 0 28px;padding:0 4px;">
-            <th:block th:each="step,iter : ${ {'Confirmée'||'Prête'||'Récupérée'} }">
+
+            <th:block th:each="step,iter : ${T(java.util.List).of('Confirmée','Prête','Récupérée')}">
+
                 <div style="text-align:center;flex:1;position:relative;">
+
+                    <!-- connector line -->
                     <div th:if="${iter.index > 0}"
-                         th:style="'position:absolute;top:14px;left:-12px;right:calc(50% + 10px);height:3px;border-radius:2px;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e0e0e0')+';'">
+                         th:style="'position:absolute;top:14px;left:-12px;right:calc(50% + 10px);height:3px;border-radius:2px;background-color:' +
+                 (${iter.index <= currentStepIndex} ? ${statusColor} : '#e0e0e0') + ';'">
                     </div>
-                    <div th:style="'width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;background-color:'+(${iter.index} le ${currentStepIndex} ? ${statusColor} : '#e8e8e8')+';'">
-                        <span th:style="'font-size:11px;color:'+(${iter.index} le ${currentStepIndex} ? '#fff' : '#aaa')+';'">✓</span>
+
+                    <!-- circle -->
+                    <div th:style="'width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;background-color:' +
+                 (${iter.index <= currentStepIndex} ? ${statusColor} : '#e8e8e8') + ';'">
+
+                <span th:style="'font-size:11px;color:' +
+                     (${iter.index <= currentStepIndex} ? '#fff' : '#aaa') + ';'">
+                    ✓
+                </span>
                     </div>
-                    <span th:style="'font-size:10px;font-weight:'+(${iter.index} le ${currentStepIndex} ? '600' : '400')+';color:'+(${iter.index} le ${currentStepIndex} ? '#333' : '#aaa')+';'"
-                          th:text="${step}">Step</span>
+
+                    <!-- label -->
+                    <span th:style="'font-size:10px;font-weight:' +
+                 (${iter.index <= currentStepIndex} ? '600' : '400') + ';color:' +
+                 (${iter.index <= currentStepIndex} ? '#333' : '#aaa') + ';'"
+                          th:text="${step}">
+            </span>
+
                 </div>
+
             </th:block>
         </div>
 
@@ -91,7 +116,8 @@
                            th:text="'Qté: ' + ${item.quantity}">Qté: 1</p>
                     </div>
                     <p style="font-size:14px;color:#333;font-weight:600;margin:0;"
-                       th:text="${#numbers.formatDecimal(item.unitPrice * item.quantity, 1, 'COMMA', 0, 'POINT')} + ' MAD'">0 MAD</p>
+                       th:text="${#numbers.formatDecimal(item.unitPrice * item.quantity, 1, 'COMMA', 0, 'POINT')} + ' MAD'">
+                        0 MAD</p>
                 </div>
             </th:block>
 

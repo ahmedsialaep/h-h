@@ -19,7 +19,7 @@ import freelance.twin.sport.server.stockReservation.entity.StockReservation;
 import freelance.twin.sport.server.stockReservation.service.StockReservationService;
 import freelance.twin.sport.server.user.entity.User;
 import freelance.twin.sport.server.user.repository.UserRepository;
-import freelance.twin.sport.server.user.service.status_order.OrderStatusMessageService;
+import freelance.twin.sport.server.config.mail.status_order.OrderStatusMessageService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -163,6 +163,7 @@ public class CommandeService {
                         varsRepository.save(variant);
                     });
                 }
+
             }
 
             default -> {}
@@ -170,6 +171,9 @@ public class CommandeService {
 
         commande.setStatus(status);
         commande.setUpdatedAt(LocalDateTime.now());
+        if(status != null) {
+            orderStatusMessageService.sendOrderStatus(userId,commande);
+        }
         return commandeRepository.save(commande);
     }
 
