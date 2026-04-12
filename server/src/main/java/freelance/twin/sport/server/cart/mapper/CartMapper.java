@@ -63,6 +63,7 @@ public class CartMapper {
             dto.setVariantId(item.getVariant().getId());
             dto.setVariantSize(item.getVariant().getSize());
             dto.setVariantColor(item.getVariant().getColor());
+            dto.setAvailableQte(item.getVariant().getAvailableQuantity());
         }
 
         return dto;

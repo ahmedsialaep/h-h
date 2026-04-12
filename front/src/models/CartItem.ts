@@ -9,6 +9,7 @@ export interface CartItemDto {
   variantId: number;
   variantSize: string;
   variantColor: string;
+  availableQte: number;
   quantity: number;
 }
 export interface CartItem {

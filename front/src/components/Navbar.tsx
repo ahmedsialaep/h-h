@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toggleCart } from "@/store/CartSlice";
+import { clearCart, toggleCart } from "@/store/CartSlice";
 
 const navLinks = [
   {
@@ -30,15 +30,15 @@ const navLinks = [
 
 const Navbar = () => {
   const { user } = useAppSelector((state) => state.auth);
-  
+  const cart = useAppSelector((state) => state.cart.cart);
+  const guestItems = useAppSelector((state) => state.cart.guestItems);
+
   const dispatch = useAppDispatch();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
-  const totalItems = useAppSelector((state) => {
-    const items = state.cart.cart?.cartItemDtos ?? [];
-    return items.reduce((acc, i) => acc + i.quantity, 0);
-  });
+  const items = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
+  const totalItems = items.reduce((acc, i) => acc + i.quantity, 0);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -55,15 +55,15 @@ const Navbar = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
+    dispatch(clearCart());
     navigate("/");
   };
-  
+
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-background/95 backdrop-blur-md border-b border-border" : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-background/95 backdrop-blur-md border-b border-border" : "bg-transparent"
+          }`}
       >
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16 md:h-20">
@@ -82,11 +82,10 @@ const Navbar = () => {
                 >
                   <Link
                     to={link.href}
-                    className={`font-heading font-semibold text-sm tracking-widest uppercase transition-colors hover:text-primary flex items-center gap-1 ${
-                      location.pathname === link.href || location.pathname.startsWith("/collection")
+                    className={`font-heading font-semibold text-sm tracking-widest uppercase transition-colors hover:text-primary flex items-center gap-1 ${location.pathname === link.href || location.pathname.startsWith("/collection")
                         ? link.href === "/shop" ? "text-primary" : location.pathname === link.href ? "text-primary" : "text-muted-foreground"
                         : "text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     {link.label}
                     {link.children && <ChevronDown size={12} />}

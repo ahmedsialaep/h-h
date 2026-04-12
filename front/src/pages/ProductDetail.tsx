@@ -5,7 +5,7 @@ import { ShoppingBag, Heart, ArrowLeft, Star, AlertTriangle } from "lucide-react
 import { motion } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchProducts, fetchProductById, clearSelected } from "@/store/productSlice";
-import { addItem, fetchCart, syncCart } from "@/store/CartSlice";
+import { addItem, syncCart } from "@/store/CartSlice";
 import { CartItemDto } from "@/models/CartItem";
 import Loading from "@/components/Loading";
 import EmptyState from "@/components/EmptyState";
@@ -21,7 +21,11 @@ const ProductDetail = () => {
   const related = useAppSelector((state) => state.products.items);
   const selectedStatus = useAppSelector((state) => state.products.selectedStatus);
   const cart = useAppSelector((state) => state.cart.cart);
+  const guestItems = useAppSelector((state) => state.cart.guestItems); // ← add
   const user = useAppSelector((state) => state.auth.user);
+
+  // ✅ single source of truth for active cart items
+  const activeItems = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
 
   useEffect(() => {
     if (!id) return;
@@ -50,21 +54,21 @@ const ProductDetail = () => {
         minPrice: null,
         maxPrice: null,
         newArrival: null,
-        search: null
+        search: null,
       },
-      
     }));
   }, [dispatch, product?.id]);
 
+  // ✅ now accounts for items already in cart/guestItems
   const getVariantStock = (size: string) => {
     const variant = (product?.variants ?? []).find((v) => String(v.size) === size);
     if (!variant) return 0;
-    return Math.max(0, variant.availableQuantity);
+    const inCart = activeItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
+    return Math.max(0, (variant.availableQuantity ?? 0) - inCart);
   };
 
   const handleAddToCart = async () => {
     if (!selectedSize || !product) return;
-
 
     const variant = (product.variants ?? []).find((v) => String(v.size) === selectedSize);
     if (!variant) return;
@@ -80,26 +84,27 @@ const ProductDetail = () => {
       variantId: variant.id,
       variantSize: selectedSize,
       variantColor: variant.color ?? "",
+      availableQte: variant.availableQuantity,
       quantity: 1,
     };
 
-    // ← fetch cart first if not loaded
-    if (user && !cart) {
-      await dispatch(fetchCart());
-    }
-
-    dispatch(addItem(item));
-
     if (user) {
+      // Build updatedItems BEFORE dispatch — avoids stale closure
       const currentItems = cart?.cartItemDtos ?? [];
       const existing = currentItems.find((i) => i.variantId === variant.id);
       const updatedItems = existing
         ? currentItems.map((i) =>
-          i.variantId === variant.id ? { ...i, quantity: i.quantity + 1 } : i
-        )
+            i.variantId === variant.id ? { ...i, quantity: i.quantity + 1 } : i
+          )
         : [...currentItems, item];
-      dispatch(syncCart(updatedItems));
+
+      dispatch(addItem(item));
+      // ✅ strip null ids — backend assigns real IDs, null causes 403
+      dispatch(syncCart(updatedItems.map(({ id, ...rest }) => ({ ...rest, id: id ?? undefined }))));
       dispatch(fetchProductById(Number(id)));
+    } else {
+      // Guest — stored locally by redux-persist
+      dispatch(addItem(item));
     }
   };
 
@@ -131,23 +136,27 @@ const ProductDetail = () => {
   if (!product) return null;
 
   const totalStock = (product.variants ?? []).reduce((acc, v) => {
-  const available = (v.availableQuantity?? 0);
-  return acc + Math.max(0, available);
-}, 0);
+    const inCart = activeItems.find((i) => i.variantId === v.id)?.quantity ?? 0;
+    return acc + Math.max(0, (v.availableQuantity ?? 0) - inCart);
+  }, 0);
+
   const availableSizes = [...new Set(
     (product.variants ?? [])
       .map((v) => v.size)
       .filter((s): s is string => s !== undefined && s !== null)
   )];
+
   const availableColors = [...new Set(
     (product.variants ?? [])
       .map((v) => v.color)
       .filter((c): c is string => c !== undefined)
   )];
+
   const isSoldOut = (product.variants ?? []).every((v) => {
-    const available = (v.availableQuantity ?? 0);
-    return available <= 0;
+    const inCart = activeItems.find((i) => i.variantId === v.id)?.quantity ?? 0;
+    return (v.availableQuantity ?? 0) - inCart <= 0;
   });
+
   const relatedProducts = related.filter((p) => p.id !== product.id).slice(0, 4);
   const selectedVariantStock = selectedSize !== null ? getVariantStock(selectedSize) : 0;
 
@@ -229,12 +238,13 @@ const ProductDetail = () => {
                       key={size}
                       onClick={() => !outOfStock && setSelectedSize(size)}
                       disabled={outOfStock}
-                      className={`min-w-[3rem] h-12 px-3 rounded-lg font-heading font-bold text-sm border transition-all ${selectedSize === size
+                      className={`min-w-[3rem] h-12 px-3 rounded-lg font-heading font-bold text-sm border transition-all ${
+                        selectedSize === size
                           ? "bg-primary text-primary-foreground border-primary"
                           : outOfStock
                             ? "bg-card border-border text-muted-foreground/30 cursor-not-allowed line-through"
                             : "bg-card border-border text-foreground hover:border-primary"
-                        }`}
+                      }`}
                     >
                       {size}
                     </button>
@@ -288,10 +298,11 @@ const ProductDetail = () => {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`font-heading font-semibold text-sm uppercase tracking-wider pb-2 border-b-2 transition-colors ${activeTab === tab
+                    className={`font-heading font-semibold text-sm uppercase tracking-wider pb-2 border-b-2 transition-colors ${
+                      activeTab === tab
                         ? "text-primary border-primary"
                         : "text-muted-foreground border-transparent hover:text-foreground"
-                      }`}
+                    }`}
                   >
                     {tabLabels[tab]}
                   </button>

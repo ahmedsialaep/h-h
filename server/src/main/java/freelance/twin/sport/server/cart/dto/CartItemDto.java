@@ -17,5 +17,6 @@ public class CartItemDto {
     private Long variantId;
     private String variantSize;
     private String variantColor;
+    private int availableQte;
     private int quantity;
 }

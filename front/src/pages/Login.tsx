@@ -4,6 +4,7 @@ import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { loginUser, clearSessionConflict, verify2FA, send2FA } from "@/store/authSlice";
+import { mergeGuestCartOnLogin } from "@/store/CartSlice";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -47,7 +48,8 @@ const Login = () => {
                 if (ISADMIN) navigate("/admin", { replace: true });
                 else navigate("/", { replace: true });
             }
-
+            await dispatch(mergeGuestCartOnLogin());
+            
         } catch (err: any) {
             if (err?.existingSession) {
                 toast({

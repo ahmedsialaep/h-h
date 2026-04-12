@@ -8,6 +8,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,9 @@ public class EmailOrderStatusService implements OrderStatusMessageService {
     private final TemplateEngine templateEngine;
     private final JavaMailSender mailSender;
     private final UserRepository userRepository;
+    @Value("${app.orders.followup.link}")
+    private String followupLink;
+
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
@@ -121,6 +125,7 @@ public class EmailOrderStatusService implements OrderStatusMessageService {
         context.setVariable("city",             commande.getCity());
         context.setVariable("address",          commande.getAdress());
         context.setVariable("phone",            commande.getPhone());
+        context.setVariable("followupLink", followupLink+commande.getRef());
 
         String body = templateEngine.process("order-status-mail", context);
 

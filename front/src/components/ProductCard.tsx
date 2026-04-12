@@ -5,8 +5,9 @@ import { ProductDTO } from "@/models/Product";
 import { IMAGE_API_URL } from "@/config/config";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { CartItemDto } from "@/models/CartItem";
-import { addItem, fetchCart, syncCart } from "@/store/CartSlice";
+import { addItem, syncCart } from "@/store/CartSlice";
 import { useToast } from "@/hooks/use-toast";
+import { useMemo } from "react";
 
 interface ProductCardProps {
   product: ProductDTO;
@@ -16,35 +17,43 @@ interface ProductCardProps {
 const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const dispatch = useAppDispatch();
   const cart = useAppSelector((state) => state.cart.cart);
+  const guestItems = useAppSelector((state) => state.cart.guestItems);
   const user = useAppSelector((state) => state.auth.user);
   const { toast } = useToast();
 
-  const getAvailableStock = (variantId: number, availableQuantity: number) => {
-  
-  const inCart = cart?.cartItemDtos?.find((i) => i.variantId === variantId)?.quantity ?? 0;
-  return (availableQuantity ?? 0) - inCart;
+
+
+  const getAvailableStock = (variant) => {
+  const items = user ? cart?.cartItemDtos ?? [] : guestItems ?? [];
+
+  const existing = items.find((i) => i.variantId === variant.id);
+
+  const baseStock = existing
+    ? (existing.availableQte ?? 0) // logged user
+    : (variant.availableQuantity ?? 0); // guest or first add
+
+  const inCart = existing?.quantity ?? 0;
+
+  return baseStock - inCart;
 };
 
 const isSoldOut =
-  !product.variants ||
-  product.variants.length === 0 ||
-  product.variants.every((v) => getAvailableStock(v.id, v.availableQuantity ?? 0) <= 0);
+  !product.variants?.length ||
+  product.variants.every((variant) => getAvailableStock(variant) <= 0);
 
-const handleQuickAdd = async (e: React.MouseEvent) => {
+  const handleQuickAdd = (e: React.MouseEvent) => {
   e.preventDefault();
   e.stopPropagation();
 
-  if (isSoldOut) return;
+  const variant =
+    product.variants[Math.floor(product.variants.length / 2)];
 
-  
-  const variant = product.variants[Math.floor(product.variants.length / 2)];
-
-  const available = getAvailableStock(variant.id, variant.availableQuantity ?? 0);
+  const available = getAvailableStock(variant);
 
   if (available <= 0) {
     toast({
       title: "Stock insuffisant",
-      description: `Il n'y a plus de stock disponible pour ce produit.`,
+      description: `Plus de stock pour la taille ${variant.size}`,
       variant: "destructive",
     });
     return;
@@ -61,29 +70,33 @@ const handleQuickAdd = async (e: React.MouseEvent) => {
     variantId: variant.id,
     variantSize: String(variant.size ?? ""),
     variantColor: variant.color ?? "",
+    availableQte: variant.availableQuantity, // important
     quantity: 1,
   };
 
-  
-  if (user && !cart) {
-    await dispatch(fetchCart());
-  }
+  const items = user ? cart?.cartItemDtos ?? [] : guestItems ?? [];
 
-  // Add item to Redux state
+  const existing = items.find((i) => i.variantId === variant.id);
+
+  const updatedItems = existing
+    ? items.map((i) =>
+        i.variantId === variant.id
+          ? { ...i, quantity: i.quantity + 1 }
+          : i
+      )
+    : [...items, item];
+
   dispatch(addItem(item));
 
   if (user) {
-    const currentItems = cart?.cartItemDtos ?? [];
-    const existing = currentItems.find((i) => i.variantId === variant.id);
-
-    const updatedItems = existing
-      ? currentItems.map((i) =>
-          i.variantId === variant.id ? { ...i, quantity: i.quantity + 1 } : i
-        )
-      : [...currentItems, item];
-
-    
-    dispatch(syncCart(updatedItems));
+    dispatch(
+      syncCart(
+        updatedItems.map(({ id, ...rest }) => ({
+          ...rest,
+          id: id ?? undefined,
+        }))
+      )
+    );
   }
 };
 
@@ -98,22 +111,26 @@ const handleQuickAdd = async (e: React.MouseEvent) => {
         <div className="relative bg-card rounded-lg overflow-hidden aspect-square">
 
           {product.newArrival && (
-            <span className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground font-heading font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm">
+            <span className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground font-heading font-bold text-[10px] uppercase px-2 py-1">
               Nouveau
             </span>
           )}
 
           {product.originalPrice && (
-            <span className="absolute top-3 right-3 z-10 bg-destructive text-destructive-foreground font-heading font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm">
+            <span className="absolute top-3 right-3 z-10 bg-destructive text-white font-bold text-[10px] px-2 py-1">
               Promo
             </span>
           )}
 
-          <div className="w-full h-full flex items-center justify-center p-8 transition-transform duration-500 group-hover:scale-110">
+          <div className="w-full h-full flex items-center justify-center p-8 group-hover:scale-110 transition-transform">
             <img
-              src={product.image ? `${IMAGE_API_URL}/${product.image}` : "/placeholder.png"}
+              src={
+                product.image
+                  ? `${IMAGE_API_URL}/${product.image}`
+                  : "/placeholder.png"
+              }
               alt={product.name}
-              className="w-full h-full object-contain drop-shadow-2xl"
+              className="w-full h-full object-contain"
               loading="lazy"
             />
           </div>
@@ -121,35 +138,28 @@ const handleQuickAdd = async (e: React.MouseEvent) => {
           {!isSoldOut ? (
             <button
               onClick={handleQuickAdd}
-              className="absolute bottom-0 left-0 right-0 bg-primary text-primary-foreground font-heading font-bold text-sm uppercase tracking-wider py-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-center gap-2"
+              className="absolute bottom-0 left-0 right-0 bg-primary text-white font-bold text-sm py-3 translate-y-full group-hover:translate-y-0 transition"
             >
-              <ShoppingBag size={16} />
+              <ShoppingBag size={16} className="inline mr-2" />
               Ajout Rapide
             </button>
           ) : (
-            <div className="absolute bottom-0 left-0 right-0 bg-muted text-muted-foreground font-heading font-bold text-sm uppercase tracking-wider py-3 flex items-center justify-center gap-2 border-t border-border">
-              <span>Épuisé</span>
+            <div className="absolute bottom-0 left-0 right-0 bg-muted text-muted-foreground font-bold text-sm py-3 text-center">
+              Épuisé
             </div>
           )}
         </div>
 
         <div className="mt-3 space-y-1">
-          <p className="text-muted-foreground text-xs font-heading uppercase tracking-wider">
+          <p className="text-muted-foreground text-xs uppercase">
             {product.brandName}
           </p>
-          <h3 className="text-foreground font-body font-semibold text-sm">
+          <h3 className="text-foreground font-semibold text-sm">
             {product.name}
           </h3>
-          <div className="flex items-center gap-2">
-            <span className="text-foreground font-heading font-bold">
-              {product.price} TND
-            </span>
-            {product.originalPrice && (
-              <span className="text-muted-foreground line-through text-xs">
-                {product.originalPrice} TND
-              </span>
-            )}
-          </div>
+          <span className="font-bold text-foreground">
+            {product.price} TND
+          </span>
         </div>
       </Link>
     </motion.div>

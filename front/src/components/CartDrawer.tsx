@@ -9,30 +9,27 @@ import { useToast } from "@/hooks/use-toast";
 const CartDrawer = () => {
   const dispatch = useAppDispatch();
   const cart = useAppSelector((state) => state.cart.cart);
+  const guestItems = useAppSelector((state) => state.cart.guestItems);
   const user = useAppSelector((state) => state.auth.user);
-  const products = useAppSelector((state) => state.products.items);
   const isOpen = useAppSelector((state) => state.cart.isCartOpen);
   const { toast } = useToast();
-  const items = cart?.cartItemDtos ?? [];
+
+  // Single source of truth — no products store needed anymore
+  const items = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
 
   const totalItems = items.reduce((acc, i) => acc + i.quantity, 0);
   const totalPrice = items.reduce((acc, i) => acc + i.quantity * (i.productPrice ?? 0), 0);
 
   const handleClose = () => dispatch(closeCart());
 
-  const getMaxAvailable = (variantId: number): number => {
-    for (const product of products) {
-      const variant = product.variants?.find((v) => v.id === variantId);
-      if (variant) {
-        return (variant.availableQuantity ?? 0);
-      }
-    }
-    return 999;
-  };
-
   const handleUpdateQuantity = (variantId: number, quantity: number) => {
+    const item = items.find((i) => i.variantId === variantId);
+    if (!item) return;
+
+    // ✅ REMOVE
     if (quantity <= 0) {
       dispatch(removeItem(variantId));
+
       if (user && cart) {
         const updatedItems = cart.cartItemDtos.filter((i) => i.variantId !== variantId);
         dispatch(syncCart(updatedItems));
@@ -40,22 +37,37 @@ const CartDrawer = () => {
       return;
     }
 
-    const maxAvailable = getMaxAvailable(variantId);
-    if (quantity > maxAvailable) {
+    const baseStock = item.availableQte ?? 0;
+    const currentQty = item.quantity;
+    const nextQty = quantity;
+
+    const remaining = baseStock - currentQty;
+    const isIncrementing = nextQty > currentQty;
+
+    if (isIncrementing && remaining <= 0) {
       toast({
         title: "Stock insuffisant",
-        description: `Quantité maximale disponible : ${maxAvailable}`,
+        description: `Stock max atteint (${baseStock})`,
         variant: "destructive",
       });
       return;
     }
 
     dispatch(updateQuantity({ variantId, quantity }));
+
     if (user && cart) {
       const updatedItems = cart.cartItemDtos.map((i) =>
         i.variantId === variantId ? { ...i, quantity } : i
       );
-      dispatch(syncCart(updatedItems));
+
+      dispatch(
+        syncCart(
+          updatedItems.map(({ id, ...rest }) => ({
+            ...rest,
+            id: id ?? undefined,
+          }))
+        )
+      );
     }
   };
 
@@ -91,7 +103,10 @@ const CartDrawer = () => {
               <h2 className="font-heading font-bold text-lg uppercase tracking-wider text-foreground">
                 Panier ({totalItems})
               </h2>
-              <button onClick={handleClose} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button
+                onClick={handleClose}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
                 <X size={22} />
               </button>
             </div>
@@ -111,20 +126,22 @@ const CartDrawer = () => {
                 </div>
               ) : (
                 items.map((item) => {
-                  const max = getMaxAvailable(item.variantId);
-                  const atMax = item.quantity >= max;
+                
 
                   return (
                     <div key={item.variantId} className="flex gap-4 bg-card rounded-lg p-3">
                       <div className="w-20 h-20 bg-muted rounded flex-shrink-0 flex items-center justify-center">
                         <img
-                          src={item.productImage
-                            ? `${IMAGE_API_URL}/${encodeURIComponent(item.productImage)}`
-                            : "/placeholder.png"}
+                          src={
+                            item.productImage
+                              ? `${IMAGE_API_URL}/${encodeURIComponent(item.productImage)}`
+                              : "/placeholder.png"
+                          }
                           alt={item.productName}
                           className="w-16 h-16 object-contain"
                         />
                       </div>
+
                       <div className="flex-1 min-w-0">
                         <p className="text-foreground font-body font-semibold text-sm truncate">
                           {item.productName}
@@ -132,15 +149,13 @@ const CartDrawer = () => {
                         <p className="text-muted-foreground text-xs">
                           {item.variantSize} • {item.variantColor}
                         </p>
-                        {atMax && (
-                          <p className="text-primary text-[10px] font-heading mt-0.5">
-                            Stock max atteint
-                          </p>
-                        )}
+                      
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleUpdateQuantity(item.variantId, item.quantity - 1)}
+                              onClick={() =>
+                                handleUpdateQuantity(item.variantId, item.quantity - 1)
+                              }
                               className="w-6 h-6 flex items-center justify-center bg-muted rounded text-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
                             >
                               <Minus size={12} />
@@ -149,8 +164,10 @@ const CartDrawer = () => {
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => handleUpdateQuantity(item.variantId, item.quantity + 1)}
-                              disabled={atMax}
+                              onClick={() =>
+                                handleUpdateQuantity(item.variantId, item.quantity + 1)
+                              }
+                              
                               className="w-6 h-6 flex items-center justify-center bg-muted rounded text-foreground hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <Plus size={12} />
@@ -161,6 +178,7 @@ const CartDrawer = () => {
                           </span>
                         </div>
                       </div>
+
                       <button
                         onClick={() => handleRemoveItem(item.variantId)}
                         className="text-muted-foreground hover:text-destructive transition-colors self-start"
