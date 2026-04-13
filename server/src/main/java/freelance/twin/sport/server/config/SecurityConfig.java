@@ -104,7 +104,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/auth/**", "/img/**").permitAll()
                         .requestMatchers("/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/magasin").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/magasin","/product-vars","/product-vars/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/products/**", "/brand/**", "/product-type/**").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN_TWIN")
                         .requestMatchers("/orders/**", "/checkout/**", "/payment/**", "/profile/**").hasAnyAuthority("STANDARD", "ADMIN_TWIN")

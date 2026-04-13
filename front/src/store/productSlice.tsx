@@ -3,6 +3,7 @@ import { Product, ProductFilters, ProductDTO } from "@/models/Product";
 import api from "@/services/http-common";
 import { adminApi } from "@/services/AdminApi";
 import { PagedResponse } from "@/models/PagedResponse";
+import { ProductVariantDTO } from "../models/ProductVars";
 
 type Status = "idle" | "loading" | "succeeded" | "failed";
 
@@ -16,6 +17,8 @@ interface ProductState {
   status: Status;
   selectedStatus: Status;
   error: string | null;
+  variantStock: ProductVariantDTO; // ← variantId → availableQuantity
+  variantStockStatus: Status;
 }
 
 const initialFilters: ProductFilters = {
@@ -46,6 +49,8 @@ const initialState: ProductState = {
   status: "idle",
   selectedStatus: "idle",
   error: null,
+  variantStock: null,
+  variantStockStatus: "idle",
 };
 
 export const fetchProducts = createAsyncThunk<
@@ -145,6 +150,29 @@ export const saveVariants = createAsyncThunk<
     return rejectWithValue(error.response?.data?.message || "Failed to save variants");
   }
 });
+export const fetchVariantStock = createAsyncThunk<
+  ProductVariantDTO,
+  number,
+  { rejectValue: string }
+>(
+  "products/fetchVariantStock",
+  async (variantId, { rejectWithValue }) => {
+    try {
+      const response = await api.get<ProductVariantDTO>(
+        `/product-vars/variants/stock`,
+        {
+          params: { variantId },
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch variant stock"
+      );
+    }
+  }
+);
 
 const productSlice = createSlice({
   name: "products",
@@ -205,7 +233,18 @@ const productSlice = createSlice({
       .addCase(updateProduct.fulfilled, () => { })
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.items = state.items.filter((p) => p.id !== action.payload);
-      });
+      })
+      .addCase(fetchVariantStock.pending, (state) => {
+        state.variantStockStatus = "loading";
+      })
+      .addCase(fetchVariantStock.fulfilled, (state, action) => {
+        state.variantStockStatus = "succeeded";
+        state.variantStock = action.payload;
+      })
+      .addCase(fetchVariantStock.rejected, (state, action) => {
+        state.variantStockStatus = "failed";
+        state.error = action.payload ?? "Failed to fetch variant stock";
+      })
   },
 });
 

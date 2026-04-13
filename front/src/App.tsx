@@ -127,7 +127,7 @@ const TwoFARoute = ({ children }: { children: React.ReactNode }) => {
 const AppContent = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-
+  
   useEffect(() => {
     dispatch(restoreSession());
   }, []);

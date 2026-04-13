@@ -71,7 +71,7 @@ public class CartService {
 
 
             int available = variant.getAvailableQuantity();
-
+            System.out.println(dto.getAvailableQte() +"-" + available);
             if (dto.getQuantity() > available) {
                 throw new RuntimeException("Stock insuffisant pour: " + variant.getSize()
                         + " (disponible: " + available + ", demandé: " + dto.getQuantity() + ")");

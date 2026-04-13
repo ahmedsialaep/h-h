@@ -1,5 +1,6 @@
 package freelance.twin.sport.server.product.service;
 
+import freelance.twin.sport.server.product.dto.ProductVariantDTO;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
 import freelance.twin.sport.server.product.repository.ProductRepository;
@@ -112,6 +113,19 @@ public class ProductVarsService {
     // Retrieve variants by product
     public List<ProductVars> retrieveVariantsByProduct(Long productId) {
         return productVarsRepository.findProductVarsByProduct_Id(productId);
+    }
+    public ProductVariantDTO getVariantStock(Long variantId) {
+        return productVarsRepository.findById(variantId)
+                .map(v -> new ProductVariantDTO(
+                        v.getId(),
+                        v.getSize(),
+                        v.getColor(),
+                        v.getStock(),
+                        v.getSoldQuantity(),
+                        v.getAvailableQuantity(),
+                        v.getProduct().getId()
+                ))
+                .orElse(new ProductVariantDTO(variantId, null, null, 0, 0, 0, null));
     }
 
 }

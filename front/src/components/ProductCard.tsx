@@ -8,6 +8,8 @@ import { CartItemDto } from "@/models/CartItem";
 import { addItem, syncCart } from "@/store/CartSlice";
 import { useToast } from "@/hooks/use-toast";
 import { useMemo } from "react";
+import { ProductVariantDTO } from "../models/ProductVars";
+import { fetchVariantStock } from "../store/productSlice";
 
 interface ProductCardProps {
   product: ProductDTO;
@@ -18,87 +20,82 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const dispatch = useAppDispatch();
   const cart = useAppSelector((state) => state.cart.cart);
   const guestItems = useAppSelector((state) => state.cart.guestItems);
+  const variantStock = useAppSelector((state) => state.products.variantStock);
   const user = useAppSelector((state) => state.auth.user);
   const { toast } = useToast();
 
+  const getAvailableStock = (variant: ProductVariantDTO) => {
+    if (user) {
+      // Logged-in: use server-computed availableQte from cart item
+      const item = cart?.cartItemDtos?.find((i) => i.variantId === variant.id);
+      return item?.availableQte ?? variant.availableQuantity ?? 0;
+    } else {
 
-
-  const getAvailableStock = (variant) => {
-  const items = user ? cart?.cartItemDtos ?? [] : guestItems ?? [];
-
-  const existing = items.find((i) => i.variantId === variant.id);
-
-  const baseStock = existing
-    ? (existing.availableQte ?? 0) // logged user
-    : (variant.availableQuantity ?? 0); // guest or first add
-
-  const inCart = existing?.quantity ?? 0;
-
-  return baseStock - inCart;
-};
-
-const isSoldOut =
-  !product.variants?.length ||
-  product.variants.every((variant) => getAvailableStock(variant) <= 0);
-
-  const handleQuickAdd = (e: React.MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  const variant =
-    product.variants[Math.floor(product.variants.length / 2)];
-
-  const available = getAvailableStock(variant);
-
-  if (available <= 0) {
-    toast({
-      title: "Stock insuffisant",
-      description: `Plus de stock pour la taille ${variant.size}`,
-      variant: "destructive",
-    });
-    return;
-  }
-
-  const item: CartItemDto = {
-    id: null,
-    productId: product.id,
-    productName: product.name,
-    productPrice: product.price,
-    productRef: product.ref ?? "",
-    productImage: product.image ?? null,
-    brandName: product.brandName ?? null,
-    variantId: variant.id,
-    variantSize: String(variant.size ?? ""),
-    variantColor: variant.color ?? "",
-    availableQte: variant.availableQuantity, // important
-    quantity: 1,
+      const fresh = variantStock;
+      const rawStock = fresh?.availableQuantity ?? variant.availableQuantity ?? 0;
+      const inGuestCart = guestItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
+      return Math.max(0, rawStock - inGuestCart);
+    }
   };
 
-  const items = user ? cart?.cartItemDtos ?? [] : guestItems ?? [];
+  const isSoldOut =
+    !product.variants?.length ||
+    product.variants.every((v) => getAvailableStock(v) <= 0);
 
-  const existing = items.find((i) => i.variantId === variant.id);
+  const handleQuickAdd = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-  const updatedItems = existing
-    ? items.map((i) =>
-        i.variantId === variant.id
-          ? { ...i, quantity: i.quantity + 1 }
-          : i
+    const variant = product.variants[Math.floor(product.variants.length / 2)];
+
+    if (!user) {
+      await dispatch(fetchVariantStock(variant.id));
+    }
+
+    const available = getAvailableStock(variant);
+
+    if (available <= 0) {
+      toast({
+        title: "Stock insuffisant",
+        description: `Plus de stock pour la taille ${variant.size}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const item: CartItemDto = {
+      id: null,
+      productId: product.id,
+      productName: product.name,
+      productPrice: product.price,
+      productRef: product.ref ?? "",
+      productImage: product.image ?? null,
+      brandName: product.brandName ?? null,
+      variantId: variant.id,
+      variantSize: String(variant.size ?? ""),
+      variantColor: variant.color ?? "",
+      availableQte: variant.availableQuantity, // stored at add-time
+      quantity: 1,
+    };
+
+    const items = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
+    const existing = items.find((i) => i.variantId === variant.id);
+    const updatedItems = existing
+      ? items.map((i) =>
+        i.variantId === variant.id ? { ...i, quantity: i.quantity + 1 } : i
       )
-    : [...items, item];
+      : [...items, item];
 
-  dispatch(addItem(item));
+    dispatch(addItem(item));
 
-  if (user) {
-    dispatch(
-      syncCart(
-        updatedItems.map(({ id, ...rest }) => ({
-          ...rest,
-          id: id ?? undefined,
-        }))
-      )
-    );
-  }
-};
+    if (user) {
+      dispatch(
+        syncCart(
+          updatedItems.map(({ id, ...rest }) => ({ ...rest, id: id ?? undefined }))
+        )
+      );
+    }
+  };
 
   return (
     <motion.div

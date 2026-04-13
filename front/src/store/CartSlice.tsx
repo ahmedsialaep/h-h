@@ -93,6 +93,7 @@ export const mergeGuestCartOnLogin = createAsyncThunk<
         productId: item.productId,
         variantId: item.variantId,
         quantity: item.quantity,
+        avaialbleQte: item.availableQte
       }));
 
       // 6️⃣ Sync with backend

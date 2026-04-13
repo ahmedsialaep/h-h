@@ -26,7 +26,7 @@ const ProductDetail = () => {
 
   // ✅ single source of truth for active cart items
   const activeItems = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
-
+  
   useEffect(() => {
     if (!id) return;
     dispatch(fetchProductById(Number(id)));
@@ -63,8 +63,7 @@ const ProductDetail = () => {
   const getVariantStock = (size: string) => {
     const variant = (product?.variants ?? []).find((v) => String(v.size) === size);
     if (!variant) return 0;
-    const inCart = activeItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
-    return Math.max(0, (variant.availableQuantity ?? 0) - inCart);
+    return Math.max(0, (variant.availableQuantity ?? 0));
   };
 
   const handleAddToCart = async () => {
@@ -153,8 +152,8 @@ const ProductDetail = () => {
   )];
 
   const isSoldOut = (product.variants ?? []).every((v) => {
-    const inCart = activeItems.find((i) => i.variantId === v.id)?.quantity ?? 0;
-    return (v.availableQuantity ?? 0) - inCart <= 0;
+   
+    return (v.availableQuantity ?? 0) <= 0;
   });
 
   const relatedProducts = related.filter((p) => p.id !== product.id).slice(0, 4);
