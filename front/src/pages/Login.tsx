@@ -27,8 +27,11 @@ const Login = () => {
 
 
             await dispatch(mergeGuestCartOnLogin());
-
-
+            
+            toast({
+                title: "Connexion réussie!",
+                description: "Bienvenue sur Jumeaux Sports."
+            });
 
             const ISADMIN = user.isAdmin;
 
@@ -44,15 +47,11 @@ const Login = () => {
                     // Show error message to user
                 }
             } else {
-                toast({
-                    title: "Connexion réussie!",
-                    description: "Bienvenue sur Jumeaux Sports."
-                });
                 if (ISADMIN) navigate("/admin", { replace: true });
                 else navigate("/", { replace: true });
             }
-
-
+            
+            
         } catch (err: any) {
             if (err?.existingSession) {
                 toast({
@@ -63,7 +62,7 @@ const Login = () => {
             } else {
                 toast({
                     title: "Erreur",
-                    description: err?.message || "Identifiants invalides",
+                    description: err?.error || "Identifiants invalides",
                     variant: "destructive"
                 });
             }
