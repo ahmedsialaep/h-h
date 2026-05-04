@@ -71,7 +71,7 @@ const TwoFactorAuth = () => {
         } catch (error: any) {
             toast({
                 title: "Erreur",
-                description: error?.error || "Impossible d'envoyer le code",
+                description: error?.message || "Impossible d'envoyer le code",
                 variant: "destructive"
             });
         } finally {
