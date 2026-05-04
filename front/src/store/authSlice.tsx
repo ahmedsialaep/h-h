@@ -102,8 +102,16 @@ export const loginUser = createAsyncThunk<
     };
     return user;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data);
-  }
+        const errorData = error.response?.data;
+
+        if (errorData?.errorCode === 'ACTIVE_SESSION') {
+            return rejectWithValue({
+                existingSession: true,
+                deviceType: errorData.deviceType,
+            });
+        }
+
+    }
 });
 
 export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(

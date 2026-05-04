@@ -4,6 +4,8 @@ import freelance.twin.sport.server.user.dto.Verify2FaRequest;
 import freelance.twin.sport.server.user.entity.Role;
 import freelance.twin.sport.server.user.entity.TwofaMethod;
 import freelance.twin.sport.server.user.entity.User;
+import freelance.twin.sport.server.user.exception.ActiveSessionException;
+import freelance.twin.sport.server.user.exception.InvalidSession;
 import freelance.twin.sport.server.user.repository.UserRepository;
 import freelance.twin.sport.server.config.mail.twofa.ITowFaMessageService;
 import freelance.twin.sport.server.config.mail.twofa.TowFaMessageFactory;
@@ -196,13 +198,10 @@ public class UserService {
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-
         String userAgent = request.getHeader("User-Agent");
         boolean isComputer = userAgent != null && !userAgent.toLowerCase().contains("mobile");
         String deviceType = isComputer ? "computer" : "mobile";
-
         String username = user.getUsername();
-
 
         User authenticatedUser = findUserByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -210,43 +209,47 @@ public class UserService {
         String role = authenticatedUser.getRoleUser().name();
         boolean isAdmin = "ADMIN_TWIN".equalsIgnoreCase(role);
 
+        // ─── Active Session Check ─────────────────────────────────────────────────
+        if ((isAdmin) && !force && tokenStoreService.hasActiveSession(username, deviceType)) {
+            try {
+                boolean isValid = jwtUtils.validateToken(request);
 
-        if (isAdmin && !force) {
-            if (tokenStoreService.hasActiveSession(username, deviceType)) {
+                if (isValid) {
+                    throw new ActiveSessionException("Another session is active on: " + deviceType);
+                }
 
-                try {
-                    if (jwtUtils.validateToken(request)) {
-                        throw new RuntimeException("ACTIVE_SESSION_" + deviceType);
+                String storedToken = tokenStoreService.getToken(username, deviceType);
+                if (storedToken != null) {
+                    try {
+                        jwtUtils.validateTokenString(storedToken);
+                        throw new ActiveSessionException("Another session is active on: " + deviceType);
+                    } catch (ExpiredJwtException e) {
+                        tokenStoreService.invalidateToken(username, deviceType);
                     }
-                } catch (ExpiredJwtException e) {
+                } else {
                     tokenStoreService.invalidateToken(username, deviceType);
                 }
+
+            } catch (ActiveSessionException e) {
+                throw e;
+            } catch (ExpiredJwtException e) {
+                tokenStoreService.invalidateToken(username, deviceType);
             }
         }
-
+        // ─────────────────────────────────────────────────────────────────────────
 
         boolean verified2FA = jwtUtils.checkIs2FaVerified(
                 authenticatedUser.getLast2FaVerification(),
                 authenticatedUser.getCodeVerification2FA()
         );
 
-
-        String jwt = jwtUtils.generateToken(
-                userDetails,
-
-                deviceType,
-                authenticatedUser
-        );
-        System.out.println(authenticatedUser.getRoleUser().name());
+        String jwt = jwtUtils.generateToken(userDetails, deviceType, authenticatedUser);
 
         if (isAdmin) {
             tokenStoreService.storeToken(username, jwt, deviceType);
         }
 
-
-            jwtUtils.buildJwtCookie(jwt, deviceType, response);
-
-
+        jwtUtils.buildJwtCookie(jwt, deviceType, response);
 
         return Map.of(
                 "userId", authenticatedUser.getId(),
@@ -281,7 +284,7 @@ public class UserService {
 
             if (!tokenStoreService.isLatestToken(username, token, dt)) {
                 logout(response);
-                throw new RuntimeException("SESSION_INVALIDATED");
+                throw new InvalidSession("SESSION_INVALIDATED");
             }
         }
 

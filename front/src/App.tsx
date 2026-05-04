@@ -37,92 +37,12 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminBrands from "./pages/admin/AdminBrands";
-
 import NotFound from "./pages/NotFound";
 import { fetchCart } from "./store/CartSlice";
 import { PersistGate } from "redux-persist/integration/react";
-import { fetchProducts } from "./store/productSlice";
+import { ProtectedRoute, PublicRoute, TwoFARoute } from "./components/guards/guard";
 
 const queryClient = new QueryClient();
-
-
-// ✅ SINGLE CLEAN PROTECTED ROUTE
-const ProtectedRoute = ({
-  children,
-  requireAuth = false,
-  require2FA = false,
-  adminOnly = false,
-}: {
-  children: React.ReactNode;
-  requireAuth?: boolean;
-  require2FA?: boolean;
-  adminOnly?: boolean;
-}) => {
-  const { user, restoringSession } = useAppSelector((state) => state.auth);
-
-  // ⏳ Wait for session restore (CRITICAL to avoid wrong redirects)
-  if (restoringSession) {
-    return <Loading fullScreen size="lg" />;
-  }
-
-  // 🔐 Auth required
-  if (requireAuth && !user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // 🔑 2FA required
-  if (require2FA && user && !user.verified2FA) {
-    return <Navigate to="/2fa" replace />;
-  }
-
-  // 👑 Admin only
-  if (adminOnly && user && !user.isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-
-// 🚫 Public route (login / signup)
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, restoringSession } = useAppSelector((state) => state.auth);
-
-  if (restoringSession) {
-    return <Loading fullScreen size="lg" />;
-  }
-
-  if (user && user.verified2FA) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (user && !user.verified2FA) {
-    return <Navigate to="/2fa" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-
-// 🔐 2FA Route
-const TwoFARoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, restoringSession } = useAppSelector((state) => state.auth);
-
-  if (restoringSession) {
-    return <Loading fullScreen size="lg" />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user.verified2FA) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-};
-
 
 const AppContent = () => {
   const dispatch = useAppDispatch();

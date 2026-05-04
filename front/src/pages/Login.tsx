@@ -5,13 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { loginUser, clearSessionConflict, verify2FA, send2FA } from "@/store/authSlice";
 import { mergeGuestCartOnLogin } from "@/store/CartSlice";
-import { fetchProducts } from "../store/productSlice";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const filters = useAppSelector((state) => state.products.filters);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -28,11 +26,6 @@ const Login = () => {
 
             await dispatch(mergeGuestCartOnLogin());
             
-            toast({
-                title: "Connexion réussie!",
-                description: "Bienvenue sur Jumeaux Sports."
-            });
-
             const ISADMIN = user.isAdmin;
 
             if (!user.verified2FA) {

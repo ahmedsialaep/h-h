@@ -1,5 +1,7 @@
 package freelance.twin.sport.server.handler;
 
+import freelance.twin.sport.server.config.ApiRes;
+import freelance.twin.sport.server.excepion.JmxSportException;
 import freelance.twin.sport.server.user.service.UserService;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +20,12 @@ public class GlobalExceptionHandler {
 
     private final UserService authService;
 
+    @ExceptionHandler(JmxSportException.class)
+    public ResponseEntity<ApiRes<?>> handleCrmException(JmxSportException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiRes.fail(ex.getApiErrorCode(), ex.getMessage()));
+    }
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<?> handleExpiredJwt(
                                               HttpServletResponse response) {

@@ -2,6 +2,7 @@ package freelance.twin.sport.server.user.controller;
 
 import freelance.twin.sport.server.user.dto.Verify2FaRequest;
 import freelance.twin.sport.server.user.entity.User;
+import freelance.twin.sport.server.user.exception.ActiveSessionException;
 import freelance.twin.sport.server.user.service.TokenStoreService;
 import freelance.twin.sport.server.user.service.UserService;
 import freelance.twin.sport.server.utils.JwtUtils;
@@ -45,16 +46,15 @@ public class AuthController {
                                        @RequestParam(defaultValue = "false") boolean force,
                                        HttpServletRequest request,
                                        HttpServletResponse response) {
-
         try {
             return ResponseEntity.ok(userService.login(user, force, request, response));
 
-        } catch (RuntimeException e) {
-
-            if (e.getMessage().startsWith("ACTIVE_SESSION")) {
+        } catch (ActiveSessionException e) {
+            if (e.getErrorCode().equals("ACTIVE_SESSION")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                        "error", "You already have an active session",
-                        "existingSession", true
+                        "errorCode", e.getErrorCode(),
+                        "message", e.getMessage()
+
                 ));
             }
 

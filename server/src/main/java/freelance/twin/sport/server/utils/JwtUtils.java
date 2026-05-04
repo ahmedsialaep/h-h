@@ -201,5 +201,10 @@ public class JwtUtils {
 
         return Instant.now().isBefore(expiryTime);
     }
-
+    public void validateTokenString(String token) {
+        Jwts.parser()
+                .setSigningKey(secretKey)
+                .build()
+                .parseSignedClaims(token);
+    }
 }
