@@ -5,44 +5,50 @@ import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { removeItem, updateQuantity, syncCart, closeCart } from "@/store/CartSlice";
 import { IMAGE_API_URL } from "@/config/config";
 import { useToast } from "@/hooks/use-toast";
-import { fetchVariantStock } from "../store/productSlice";
+import { fetchVariantStock, fetchVariantStockBatch } from "../store/productSlice";
 import { CartItemDto } from "../models/CartItem";
+import { useEffect } from "react";
 
 const CartDrawer = () => {
   const dispatch = useAppDispatch();
   const cart = useAppSelector((state) => state.cart.cart);
+  const variantStockMap = useAppSelector((state) => state.products.variantStockMap);
   const guestItems = useAppSelector((state) => state.cart.guestItems);
-  const variantStock = useAppSelector((state) => state.products.variantStock); // ← for guests
   const user = useAppSelector((state) => state.auth.user);
   const isOpen = useAppSelector((state) => state.cart.isCartOpen);
   const { toast } = useToast();
- 
+
   const items = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
- 
+
   const totalItems = items.reduce((acc, i) => acc + i.quantity, 0);
   const totalPrice = items.reduce((acc, i) => acc + i.quantity * (i.productPrice ?? 0), 0);
- 
+
   const handleClose = () => dispatch(closeCart());
- 
-  // Returns how many MORE the user can add
+  useEffect(() => {
+    if (!user && guestItems.length > 0 && isOpen) {
+      const ids = guestItems.map((i) => i.variantId);
+      dispatch(fetchVariantStockBatch(ids));
+    }
+  }, [isOpen, user]);
+
   const getRemainingStock = (variantId: number): number => {
     if (user) {
 
       const item = items.find((i) => i.variantId === variantId);
       return item?.availableQte ?? 0;
     } else {
- 
-      const fresh = variantStock;
-      const rawStock = fresh?.availableQuantity ?? 999; // 999 = not fetched yet
+
+      const rawStock = variantStockMap[variantId] ?? Infinity
+      console.log(rawStock)
       const inGuestCart = guestItems.find((i) => i.variantId === variantId)?.quantity ?? 0;
       return Math.max(0, rawStock - inGuestCart);
     }
   };
- 
+
   const handleUpdateQuantity = async (variantId: number, quantity: number) => {
     const item = items.find((i) => i.variantId === variantId);
     if (!item) return;
- 
+
     if (quantity <= 0) {
       dispatch(removeItem(variantId));
       if (user && cart) {
@@ -51,17 +57,13 @@ const CartDrawer = () => {
       }
       return;
     }
- 
+
     const isIncrementing = quantity > item.quantity;
- 
+
     if (isIncrementing) {
-      // ✅ Guest only: fetch fresh stock before checking
-      // Logged-in: skip — availableQte from server is already accurate
-      if (!user) {
-        await dispatch(fetchVariantStock(variantId));
-      }
- 
+
       const remaining = getRemainingStock(variantId);
+
       if (remaining <= 0) {
         toast({
           title: "Stock insuffisant",
@@ -71,7 +73,7 @@ const CartDrawer = () => {
         return;
       }
     }
- 
+
     dispatch(updateQuantity({ variantId, quantity }));
     if (user && cart) {
       const updatedItems = cart.cartItemDtos.map((i) =>
@@ -80,7 +82,7 @@ const CartDrawer = () => {
       dispatch(syncCart(updatedItems));
     }
   };
- 
+
   const handleRemoveItem = (variantId: number) => {
     dispatch(removeItem(variantId));
     if (user && cart) {
@@ -88,7 +90,7 @@ const CartDrawer = () => {
       dispatch(syncCart(updatedItems));
     }
   };
- const getAtMax = (item: CartItemDto): boolean => {
+  const getAtMax = (item: CartItemDto): boolean => {
     if (user) return (item.availableQte ?? 0) <= 0;
     return getRemainingStock(item.variantId) <= 0;
   };
@@ -139,7 +141,7 @@ const CartDrawer = () => {
                 </div>
               ) : (
                 items.map((item) => {
-                  
+
 
                   return (
                     <div key={item.variantId} className="flex gap-4 bg-card rounded-lg p-3">

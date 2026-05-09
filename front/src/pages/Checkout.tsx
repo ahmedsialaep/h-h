@@ -21,11 +21,11 @@ const Checkout = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  const guestItems = useAppSelector((state) => state.cart.guestItems);
   const cart = useAppSelector((state) => state.cart.cart);
   const user = useAppSelector((state) => state.auth.user);
-  const items = cart?.cartItemDtos ?? [];
-
+  const items = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
+  
   const [step, setStep] = useState(0);
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "delivery">("pickup");
   const [selectedWilaya, setSelectedWilaya] = useState(REGION_LABEL[0]);

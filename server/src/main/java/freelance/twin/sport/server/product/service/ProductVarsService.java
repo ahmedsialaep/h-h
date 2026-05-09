@@ -127,5 +127,13 @@ public class ProductVarsService {
                 ))
                 .orElse(new ProductVariantDTO(variantId, null, null, 0, 0, 0, null));
     }
+    public Map<Long, Integer> getBatchStock(List<Long> variantIds) {
+        return productVarsRepository.findAllByIds(variantIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        ProductVars::getId,
+                        ProductVars::getAvailableQuantity
+                ));
+    }
 
 }

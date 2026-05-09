@@ -102,13 +102,14 @@ public class SecurityConfig {
                     return config;
                 }))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/**", "/img/**").permitAll()
-                        .requestMatchers("/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/magasin","/product-vars","/product-vars/**").permitAll()
 
+                        .requestMatchers("/auth/logout").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/magasin","/product-vars","/product-vars/**","/commande/{ref}").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/commande/checkout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/**", "/brand/**", "/product-type/**").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN_TWIN")
-                        .requestMatchers("/orders/**", "/checkout/**", "/payment/**", "/profile/**").hasAnyAuthority("STANDARD", "ADMIN_TWIN")
+                        .requestMatchers("/commande/**", "/payment/**", "/profile/**").hasAnyAuthority("STANDARD", "ADMIN_TWIN")
+                        .requestMatchers("/auth/**", "/img/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

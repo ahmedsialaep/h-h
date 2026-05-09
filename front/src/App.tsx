@@ -147,18 +147,18 @@ const AppContent = () => {
                 <Route
                   path="/checkout"
                   element={
-                    <ProtectedRoute requireAuth require2FA>
+                    
                       <Checkout />
-                    </ProtectedRoute>
+                    
                   }
                 />
 
                 <Route
                   path="/order-tracking"
                   element={
-                    <ProtectedRoute requireAuth>
+                    
                       <OrderTracking />
-                    </ProtectedRoute>
+                    
                   }
                 />
 

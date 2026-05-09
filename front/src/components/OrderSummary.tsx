@@ -7,7 +7,8 @@ interface OrderSummaryProps {
 
 const OrderSummary = ({ deliveryFee }: OrderSummaryProps) => {
   const cart = useAppSelector((state) => state.cart.cart);
-  const items = cart?.cartItemDtos ?? [];
+  const guestItems = useAppSelector((state) => state.cart.guestItems);
+  const items = cart ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
   const totalPrice = items.reduce((acc, i) => acc + i.quantity * (i.productPrice ?? 0), 0);
   const total = totalPrice + deliveryFee;
 

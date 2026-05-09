@@ -17,7 +17,8 @@ interface ProductState {
   status: Status;
   selectedStatus: Status;
   error: string | null;
-  variantStock: ProductVariantDTO; // ← variantId → availableQuantity
+  variantStock: ProductVariantDTO ; 
+  variantStockMap: Record<number, number>,
   variantStockStatus: Status;
 }
 
@@ -51,6 +52,7 @@ const initialState: ProductState = {
   error: null,
   variantStock: null,
   variantStockStatus: "idle",
+  variantStockMap: {},
 };
 
 export const fetchProducts = createAsyncThunk<
@@ -173,6 +175,28 @@ export const fetchVariantStock = createAsyncThunk<
     }
   }
 );
+export const fetchVariantStockBatch = createAsyncThunk<
+  Record<number, number>,
+  number[],
+  { rejectValue: string }
+>(
+  "products/fetchVariantStockBatch",
+  async (variantIds, { rejectWithValue }) => {
+    try {
+      const response = await api.get<Record<number, number>>(
+        "/product-vars/variants/stock/batch",
+        {
+          params: { variantIds: variantIds.join(",") },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch variant stock batch"
+      );
+    }
+  }
+);
 
 const productSlice = createSlice({
   name: "products",
@@ -242,6 +266,17 @@ const productSlice = createSlice({
         state.variantStock = action.payload;
       })
       .addCase(fetchVariantStock.rejected, (state, action) => {
+        state.variantStockStatus = "failed";
+        state.error = action.payload ?? "Failed to fetch variant stock";
+      })
+      .addCase(fetchVariantStockBatch.pending, (state) => {
+        state.variantStockStatus = "loading";
+      })
+      .addCase(fetchVariantStockBatch.fulfilled, (state, action) => {
+        state.variantStockStatus = "succeeded";
+        state.variantStockMap = { ...state.variantStockMap, ...action.payload };
+      })
+      .addCase(fetchVariantStockBatch.rejected, (state, action) => {
         state.variantStockStatus = "failed";
         state.error = action.payload ?? "Failed to fetch variant stock";
       })

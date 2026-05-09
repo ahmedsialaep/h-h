@@ -21,21 +21,19 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const cart = useAppSelector((state) => state.cart.cart);
   const guestItems = useAppSelector((state) => state.cart.guestItems);
   const variantStock = useAppSelector((state) => state.products.variantStock);
+  const variantStockMap = useAppSelector((state) => state.products.variantStockMap);
+
   const user = useAppSelector((state) => state.auth.user);
   const { toast } = useToast();
 
   const getAvailableStock = (variant: ProductVariantDTO) => {
     if (user) {
-      // Logged-in: use server-computed availableQte from cart item
       const item = cart?.cartItemDtos?.find((i) => i.variantId === variant.id);
       return item?.availableQte ?? variant.availableQuantity ?? 0;
-    } else {
-
-      const fresh = variantStock;
-      const rawStock = fresh?.availableQuantity ?? variant.availableQuantity ?? 0;
-      const inGuestCart = guestItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
-      return Math.max(0, rawStock - inGuestCart);
     }
+    const rawStock = variantStockMap[variant.id] ?? variant.availableQuantity ?? 0;
+    const inGuestCart = guestItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
+    return Math.max(0, rawStock - inGuestCart);
   };
 
   const isSoldOut =

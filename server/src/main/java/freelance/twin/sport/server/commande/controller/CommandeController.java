@@ -33,8 +33,8 @@ public class CommandeController {
     ) {
 
         User user = userService.getCurrentUser();
-
-        return ResponseEntity.ok(commandeService.createCommande(request, user.getId()));
+        UUID userId = user != null ? user.getId() : null;
+        return ResponseEntity.ok(commandeService.createCommande(request, userId));
     }
     @GetMapping("/{ref}")
     public ResponseEntity<?> findByRef(

@@ -67,15 +67,11 @@ const OrderTracking = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const user = useAppSelector((state) => state.auth.user);
   const { selectedOrder: order, selectedOrderStatus } = useAppSelector((state) => state.commande);
 
   const [inputRef, setInputRef] = useState(searchParams.get("ref") ?? "");
   const [searchedRef, setSearchedRef] = useState(searchParams.get("ref") ?? "");
 
-  useEffect(() => {
-    if (!user) { navigate("/login"); return; }
-  }, [user, navigate]);
 
   
   useEffect(() => {

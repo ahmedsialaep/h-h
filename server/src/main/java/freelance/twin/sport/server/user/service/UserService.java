@@ -319,7 +319,7 @@ public class UserService {
             return userRepository.findUserByUsername(userDetails.getUsername());
         }
 
-        throw new RuntimeException("Invalid authentication principal");
+        return null;
     }
 
 }
