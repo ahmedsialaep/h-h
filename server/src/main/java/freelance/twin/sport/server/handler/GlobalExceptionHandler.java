@@ -27,11 +27,11 @@ public class GlobalExceptionHandler {
                 .body(ApiRes.fail(ex.getApiErrorCode(), ex.getMessage()));
     }
     @ExceptionHandler(ExpiredJwtException.class)
-    public ResponseEntity<?> handleExpiredJwt(
+    public ResponseEntity<?> handleExpiredJwt(HttpServletRequest request,
                                               HttpServletResponse response) {
 
 
-        authService.logout(response);
+        authService.logout(request,response);
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Session expired"));

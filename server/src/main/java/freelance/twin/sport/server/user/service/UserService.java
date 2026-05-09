@@ -99,15 +99,19 @@ public class UserService {
     }
 
 
-    public void logout( HttpServletResponse response) {
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
 
+        String username = getCurrentUser().getUsername();
         SecurityContextHolder.clearContext();
 
+        String userAgent = request.getHeader("User-Agent"); // ← was response, must be request
+        boolean isComputer = userAgent != null && !userAgent.toLowerCase().contains("mobile");
+        String deviceType = isComputer ? "computer" : "mobile";
 
         jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
         jwtUtils.buildClearCookie(response, "XSRF-TOKEN");
         jwtUtils.buildClearCookie(response, "JSESSIONID");
-
+        tokenStoreService.invalidateToken(username, deviceType);
     }
 
     public String generate2FaString(int length) {
@@ -283,7 +287,7 @@ public class UserService {
                     : "computer";
 
             if (!tokenStoreService.isLatestToken(username, token, dt)) {
-                logout(response);
+                logout(request,response);
                 throw new InvalidSession("SESSION_INVALIDATED");
             }
         }

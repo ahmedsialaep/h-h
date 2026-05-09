@@ -35,8 +35,9 @@ public class ProductService {
         Pageable pageable = PageRequest.of(filter.getPage(), filter.getPageSize(), sort);
 
         String cleanSearch = (filter.getSearch() != null && !filter.getSearch().isBlank())
-                ? filter.getSearch().trim()
+                ? "%" + filter.getSearch().toLowerCase().trim() + "%"
                 : null;
+
 
         return productRepository.findAllWithFilters(
                 filter.getBrandIds(),
