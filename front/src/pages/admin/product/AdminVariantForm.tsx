@@ -62,11 +62,10 @@ const AdminVariantForm: React.FC<AdminVariantFormProps> = ({
                 // ← keep ids when switching size type on existing variants
                 onVariantsChange([emptyVariant()]);
               }}
-              className={`px-3 py-1.5 rounded-lg font-heading text-xs uppercase tracking-wider transition-colors ${
-                sizeType === opt.value
+              className={`px-3 py-1.5 rounded-lg font-heading text-xs uppercase tracking-wider transition-colors ${sizeType === opt.value
                   ? "bg-primary text-primary-foreground"
                   : "bg-card border border-border text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               {opt.label}
             </button>
@@ -90,13 +89,15 @@ const AdminVariantForm: React.FC<AdminVariantFormProps> = ({
             <div className="relative">
               <select
                 value={v.size}
-                onChange={(e) => updateVariantRow(i, "size",
-                  sizeType === "CLOTHING" ? e.target.value : parseFloat(e.target.value)
-                )}
+                onChange={(e) => updateVariantRow(i, "size", e.target.value)}
+
                 className="w-full appearance-none bg-background border border-border rounded-lg px-3 pr-7 py-2 text-sm text-foreground cursor-pointer hover:border-primary/50 transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
-              >
+              > 
+              
                 <option value="">Taille</option>
+                
                 {getSizesByType(sizeType).map((s) => (
+                  
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>

@@ -12,9 +12,17 @@ export const SIZE_TYPE_OPTIONS = [
 
 export const getSizesByType = (type: string): (number | string)[] => {
   switch (type) {
-    case "EU_KIDS": return EU_SIZES_KIDS;
-    case "EU_ADULTS": return EU_SIZES_ADULTS;
-    case "CLOTHING": return CLOTHING_SIZES;
-    default: return EU_SIZES_ALL;
+    case "EU_KIDS": return [...EU_SIZES_KIDS].sort((a, b) => a - b);
+    case "EU_ADULTS": return [...EU_SIZES_ADULTS].sort((a, b) => a - b);
+    case "CLOTHING": return CLOTHING_SIZES; 
+    default: return [...EU_SIZES_ALL].sort((a, b) => a - b);
   }
+};
+export const inferSizeType = (sizes: (string | number)[]): string => {
+  if (!sizes.length) return "EU_ADULTS";
+  const first = String(sizes[0]);
+  if (CLOTHING_SIZES.includes(first)) return "CLOTHING";
+  const num = Number(first);
+  if (EU_SIZES_KIDS.includes(num)) return "EU_KIDS";
+  return "EU_ADULTS";
 };

@@ -11,6 +11,7 @@ import { IMAGE_API_URL } from "@/config/config";
 import { CATEGORIE_LABELS, GENRE_LABELS } from "@/models/constants/GenderConstant";
 import EnhancedSelect from "@/components/admin/EnhancedSelect";
 import AdminVariantForm, { VariantRow, emptyVariant } from "../product/AdminVariantForm";
+import { inferSizeType } from "@/models/constants/SizeConstants";
 
 interface ProductFormProps {
   initialData?: ProductDTO;
@@ -30,8 +31,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
   const [errors, setErrors] = useState<string[]>([]);
   const [variantErrors, setVariantErrors] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
-  const [sizeType, setSizeType] = useState("EU_ADULTS");
-  const [showStockWarning, setShowStockWarning] = useState(false);
+  const [sizeType, setSizeType] = useState(() =>
+    inferSizeType((initialData?.variants ?? []).map((v) => v.size))
+  ); const [showStockWarning, setShowStockWarning] = useState(false);
   const [stockReductions, setStockReductions] = useState<string[]>([]);
   const [stockReductionConfirmed, setStockReductionConfirmed] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | undefined>(
@@ -91,6 +93,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
       );
       setImagePreview(initialData.image ? `${IMAGE_API_URL}/${initialData.image}` : undefined);
       setImageFile(undefined);
+      setSizeType(inferSizeType((initialData?.variants ?? []).map((v) => v.size)));
+
     }
   }, [initialData]);
 

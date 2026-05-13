@@ -28,7 +28,7 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     public Page<Product> retrieveAllProducts(ProductFilterRequest filter) {
-        Sort sort = filter.getSortDir().equalsIgnoreCase("desc")
+        Sort sort = filter.getSortDir().equalsIgnoreCase("asc")
                 ? Sort.by(filter.getSortBy()).descending()
                 : Sort.by(filter.getSortBy()).ascending();
 

@@ -6,6 +6,7 @@ import freelance.twin.sport.server.product.dto.ProductVariantDTO;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,10 @@ public class ProductMapper {
 
         List<ProductVariantDTO> variants = product.getVariants()
                 .stream()
+                .sorted(Comparator.comparingDouble(v -> {
+                    try { return Double.parseDouble(v.getSize()); }
+                    catch (NumberFormatException e) { return 0.0; }
+                }))
                 .map(v -> new ProductVariantDTO(
                         v.getId(),
                         v.getSize(),
