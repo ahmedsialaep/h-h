@@ -62,7 +62,7 @@ public class JwtUtils {
         return claimsResolver.apply(extractAllClaims(token));
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()

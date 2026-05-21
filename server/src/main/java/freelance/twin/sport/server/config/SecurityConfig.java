@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,12 +37,10 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserDetailsService userDetailsService;
-    private final JwtUtils jwtUtils;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private  JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Value("${app.upload.image-dir}")
     private String imageUploadDir;
@@ -52,7 +51,6 @@ public class SecurityConfig {
     @Value("${app.security.cookiePath}")
     private String cookiePath;
 
-    private final TokenStoreService tokenStoreService;
 
 
     @Bean
@@ -66,7 +64,7 @@ public class SecurityConfig {
         return new CsrfTokenRequestAttributeHandler();
     }
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())
@@ -113,7 +111,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(userDetailsService, jwtUtils, tokenStoreService),
+                        jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
 
@@ -128,10 +126,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
-    }
 
     @Bean
     public WebMvcConfigurer webMvcConfigurer() {
@@ -145,7 +139,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        return http.getSharedObject(AuthenticationManagerBuilder.class).build();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

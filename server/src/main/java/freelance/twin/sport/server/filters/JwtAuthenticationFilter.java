@@ -2,32 +2,33 @@ package freelance.twin.sport.server.filters;
 
 import freelance.twin.sport.server.user.service.CustomUserDetailsService;
 import freelance.twin.sport.server.user.service.TokenStoreService;
-import freelance.twin.sport.server.user.service.UserService;
 import freelance.twin.sport.server.utils.JwtUtils;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-
 import java.io.IOException;
-import java.util.List;
 
-@RequiredArgsConstructor
+@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final CustomUserDetailsService customUserDetailsService;
-    private final JwtUtils jwtUtils;
-    private final TokenStoreService tokenStoreService;
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
+    @Autowired
+    private JwtUtils jwtUtils;
+    @Autowired
+    private TokenStoreService tokenStoreService;
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -38,12 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username = "";
 
         try {
-            // validateToken returns false if no cookie or invalid — no exception thrown
             if (jwtUtils.validateToken(request)) {
 
-                username = jwtUtils.extractUsername(request);
-                String role = jwtUtils.extractRole(request);
-                String deviceType = jwtUtils.extractDeviceType(request);
+                Claims claims = jwtUtils.extractAllClaims(jwtUtils.extractTokenFromCookies(request));
+                username = claims.getSubject();
+                String role = claims.get("role", String.class);
+                String deviceType = claims.get("deviceType", String.class);
 
                 if ("ADMIN_TWIN".equalsIgnoreCase(role)) {
                     boolean isLatest = tokenStoreService.isLatestToken(username,
@@ -52,12 +53,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (!isLatest) {
                         boolean hasAnySession = tokenStoreService.hasActiveSession(username, deviceType);
                         if (hasAnySession) {
-                            jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                    "Admin session invalidated. Please log in again.");
+                            clearAuth(response);
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Admin session invalidated. Please log in again.\"}");
+
                             return;
                         } else {
-
+                            tokenStoreService.invalidateToken(username, deviceType);
                             tokenStoreService.storeToken(username,
                                     jwtUtils.extractTokenFromCookies(request), deviceType);
                         }
@@ -76,13 +79,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
         } catch (ExpiredJwtException ex) {
-            jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Session expired.");
+            clearAuth(response);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Session expired.\"}");
             return;
         } catch (Exception ex) {
 
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void clearAuth(HttpServletResponse response) {
+        jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
+
+        jwtUtils.buildClearCookie(response, "XSRF-TOKEN");
+        jwtUtils.buildClearCookie(response, "JSESSIONID");
+
+        SecurityContextHolder.clearContext();
     }
 }
