@@ -31,7 +31,7 @@ export const fetchCart = createAsyncThunk<CartDto, void, { rejectValue: string }
       const response = await api.get<CartDto>("/cart");
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch cart");
+      return rejectWithValue(error.response?.data?.error || "Failed to fetch cart");
     }
   }
 );
@@ -47,7 +47,7 @@ export const syncCart = createAsyncThunk<
       const response = await api.put<CartItemDto[]>("/cart", items);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to sync cart");
+      return rejectWithValue(error.response?.data?.error || "Failed to sync cart");
     }
   }
 );
@@ -102,7 +102,7 @@ export const mergeGuestCartOnLogin = createAsyncThunk<
       return syncRes.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to merge cart"
+        error.response?.data?.error || "Failed to merge cart"
       );
     }
   }

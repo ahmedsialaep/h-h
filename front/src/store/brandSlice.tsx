@@ -28,7 +28,7 @@ export const fetchBrands = createAsyncThunk<Brand[], void, { rejectValue: string
       
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch brands");
+      return rejectWithValue(error.response?.data?.error || "Failed to fetch brands");
     }
   }
 );
@@ -41,7 +41,7 @@ export const fetchBrandProductCounts = createAsyncThunk<
     const response = await api.get<Record<number, number>>("/brand/product-counts");
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to fetch counts");
+    return rejectWithValue(error.response?.data?.error || "Failed to fetch counts");
   }
 });
 export const createBrand = createAsyncThunk<
@@ -58,7 +58,7 @@ export const createBrand = createAsyncThunk<
     });
     return response.data as Brand;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to create brand");
+    return rejectWithValue(error.response?.data?.error || "Failed to create brand");
   }
 });
 
@@ -76,7 +76,7 @@ export const updateBrand = createAsyncThunk<
     });
     return response.data as Brand;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to update brand");
+    return rejectWithValue(error.response?.data?.error || "Failed to update brand");
   }
 });
 
@@ -87,7 +87,7 @@ export const deleteBrand = createAsyncThunk<number, number, { rejectValue: strin
       await adminApi.delete(`/brand/delete/${id}`);
       return id;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to delete brand");
+      return rejectWithValue(error.response?.data?.error || "Failed to delete brand");
     }
   }
 );

@@ -24,7 +24,7 @@ export const fetchTypes = createAsyncThunk<Type[], void, { rejectValue: string }
       const response = await api.get<Type[]>("/product-type");
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch types");
+      return rejectWithValue(error.response?.data?.error || "Failed to fetch types");
     }
   }
 );
@@ -36,7 +36,7 @@ export const createType = createAsyncThunk<Type, Partial<Type>, { rejectValue: s
       const response = await adminApi.post("/type/add", data);
       return response.data as Type;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to create type");
+      return rejectWithValue(error.response?.data?.error || "Failed to create type");
     }
   }
 );
@@ -50,7 +50,7 @@ export const updateType = createAsyncThunk<
     const response = await adminApi.put(`/type/${id}`, data);
     return response.data as Type;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to update type");
+    return rejectWithValue(error.response?.data?.error || "Failed to update type");
   }
 });
 
@@ -61,7 +61,7 @@ export const deleteType = createAsyncThunk<number, number, { rejectValue: string
       await adminApi.delete(`/type/${id}`);
       return id;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to delete type");
+      return rejectWithValue(error.response?.data?.error || "Failed to delete type");
     }
   }
 );

@@ -24,17 +24,17 @@ public class ApiRes<T> {
         return res;
     }
 
-    public static <T> ApiRes<T> fail(ErrorCode code, String message) {
+    public static <T> ApiRes<T> fail(String errorCode, ErrorCode error, String message) {
         ApiRes<T> res = new ApiRes<>();
         res.success = false;
-        res.error = new Error(code.name(), message);
+        res.error = new Error(errorCode, error.name(), message);
         return res;
     }
 
-    public static <T> ApiRes<T> fail(ErrorCode code, String message, Object details) {
+    public static <T> ApiRes<T> fail(String errorCode, ErrorCode error, String message, Object details) {
         ApiRes<T> res = new ApiRes<>();
         res.success = false;
-        res.error = new Error(code.name(), message, details);
+        res.error = new Error(errorCode, error.name(), message, details);
         return res;
     }
 
@@ -48,21 +48,24 @@ public class ApiRes<T> {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Error {
-        private final String code;
+        private final String errorCode;
+        private final String error;
         private final String message;
         private final Object details;
 
-        public Error(String code, String message) {
-            this(code, message, null);
+        public Error(String errorCode, String error, String message) {
+            this(errorCode, error, message, null);
         }
 
-        public Error(String code, String message, Object details) {
-            this.code = code;
+        public Error(String errorCode, String error, String message, Object details) {
+            this.errorCode = errorCode;
+            this.error = error;
             this.message = message;
             this.details = details;
         }
 
-        public String getCode() { return code; }
+        public String getErrorCode() { return errorCode; }
+        public String getError() { return error; }
         public String getMessage() { return message; }
         public Object getDetails() { return details; }
     }

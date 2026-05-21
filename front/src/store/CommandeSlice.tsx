@@ -53,7 +53,7 @@ export const createCommande = createAsyncThunk<
     const response = await api.post<CommandeDto>("/commande/checkout", request);
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to create commande");
+    return rejectWithValue(error.response?.data?.error || "Failed to create commande");
   }
 });
 export const fetchMyOrders = createAsyncThunk<
@@ -65,7 +65,7 @@ export const fetchMyOrders = createAsyncThunk<
     const response = await api.get<CommandeDto[]>("/commande/my-orders");
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to fetch orders");
+    return rejectWithValue(error.response?.data?.error || "Failed to fetch orders");
   }
 });
 export const fetchCommandes = createAsyncThunk<
@@ -86,7 +86,7 @@ export const fetchCommandes = createAsyncThunk<
     const response = await adminApi.get("/commandes", { params });
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to fetch commandes");
+    return rejectWithValue(error.response?.data?.error || "Failed to fetch commandes");
   }
 });
 export const fetchOrderByRef = createAsyncThunk<
@@ -98,7 +98,7 @@ export const fetchOrderByRef = createAsyncThunk<
     const response = await api.get<CommandeDto>(`/commande/${ref}`);
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Commande introuvable");
+    return rejectWithValue(error.response?.data?.error || "Commande introuvable");
   }
 });
 
@@ -113,7 +113,7 @@ export const updateCommandeStatus = createAsyncThunk<
     });
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to update status");
+    return rejectWithValue(error.response?.data?.error || "Failed to update status");
   }
 });
 

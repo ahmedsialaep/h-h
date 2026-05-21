@@ -29,10 +29,10 @@ public class JwtUtils {
     private final long computerExpiration;
     private final long mobileExpiration;
     private final long reservationExpiration;
-    @Value("${app.security.verification2FaDuration}")
-    private long verification2FaDuration;
     @Value("${app.security.cookieName}")
     public String COOKIE_NAME;
+    @Value("${app.security.verification2FaDuration}")
+    private long verification2FaDuration;
     @Value("${app.security.cookieDomain}")
     private String cookieDomain;
 
@@ -109,9 +109,10 @@ public class JwtUtils {
         if (token == null) return null;
         return extractUserId(request);
     }
+
     public String generateToken(UserDetails userDetails, String deviceType, User user) {
         long expiration = "mobile".equalsIgnoreCase(deviceType) ? mobileExpiration : computerExpiration;
-        boolean verified2Fa = checkIs2FaVerified(user.getLast2FaVerification(),user.getCodeVerification2FA());
+        boolean verified2Fa = checkIs2FaVerified(user.getLast2FaVerification(), user.getCodeVerification2FA());
         return Jwts.builder()
                 .subject(userDetails.getUsername())
                 .claim("userId", user.getId())
@@ -134,10 +135,11 @@ public class JwtUtils {
         } catch (ExpiredJwtException ex) {
             throw ex;
         } catch (JwtException ex) {
-            System.out.println("auth exception: "+ex.getMessage());
+            System.out.println("auth exception: " + ex.getMessage());
         }
         return false;
     }
+
     public String extractTokenFromCookies(HttpServletRequest request) {
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
@@ -148,6 +150,7 @@ public class JwtUtils {
         }
         return null;
     }
+
     public void buildJwtCookie(String value, String deviceType, HttpServletResponse response) {
         int expiration = "mobile".equalsIgnoreCase(deviceType)
                 ? (int) (mobileExpiration / 1000)
@@ -169,6 +172,7 @@ public class JwtUtils {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
+
     public void buildClearCookie(HttpServletResponse response, String name) {
 
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie
@@ -187,6 +191,7 @@ public class JwtUtils {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
+
     public boolean checkIs2FaVerified(Instant last2FaVerification, String codeVerification2FA) {
 
         if (last2FaVerification == null) {
@@ -201,6 +206,7 @@ public class JwtUtils {
 
         return Instant.now().isBefore(expiryTime);
     }
+
     public void validateTokenString(String token) {
         Jwts.parser()
                 .setSigningKey(secretKey)

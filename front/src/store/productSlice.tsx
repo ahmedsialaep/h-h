@@ -76,7 +76,7 @@ export const fetchProducts = createAsyncThunk<
     const response = await api.get<PagedResponse<ProductDTO>>("/products", { params });
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to fetch products");
+    return rejectWithValue(error.response?.data?.error || "Failed to fetch products");
   }
 });
 
@@ -89,7 +89,7 @@ export const fetchProductById = createAsyncThunk<
     const response = await api.get<ProductDTO>(`/products/${id}`);
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to fetch product");
+    return rejectWithValue(error.response?.data?.error || "Failed to fetch product");
   }
 });
 
@@ -107,7 +107,7 @@ export const createProduct = createAsyncThunk<
     });
     return response.data as Product;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to create product");
+    return rejectWithValue(error.response?.data?.error || "Failed to create product");
   }
 });
 
@@ -125,7 +125,7 @@ export const updateProduct = createAsyncThunk<
     });
     return response.data as Product;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to update product");
+    return rejectWithValue(error.response?.data?.error || "Failed to update product");
   }
 });
 
@@ -136,7 +136,7 @@ export const deleteProduct = createAsyncThunk<number, number, { rejectValue: str
       await adminApi.delete(`/product/${id}`);
       return id;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to delete product");
+      return rejectWithValue(error.response?.data?.error || "Failed to delete product");
     }
   }
 );
@@ -149,7 +149,7 @@ export const saveVariants = createAsyncThunk<
   try {
     await adminApi.post(`/product/${productId}/variants`, variants);
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to save variants");
+    return rejectWithValue(error.response?.data?.error || "Failed to save variants");
   }
 });
 export const fetchVariantStock = createAsyncThunk<
@@ -170,7 +170,7 @@ export const fetchVariantStock = createAsyncThunk<
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch variant stock"
+        error.response?.data?.error || "Failed to fetch variant stock"
       );
     }
   }
@@ -192,7 +192,7 @@ export const fetchVariantStockBatch = createAsyncThunk<
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch variant stock batch"
+        error.response?.data?.error || "Failed to fetch variant stock batch"
       );
     }
   }

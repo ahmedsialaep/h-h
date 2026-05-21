@@ -25,7 +25,7 @@ export const fetchMagasin = createAsyncThunk<Magasin, void, { rejectValue: strin
       const response = await api.get<Magasin>("/magasin");
       return response.data[0];
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch magasin");
+      return rejectWithValue(error.response?.data?.error || "Failed to fetch magasin");
     }
   }
 );
@@ -37,7 +37,7 @@ export const createMagasin = createAsyncThunk<Magasin, Magasin, { rejectValue: s
       const response = await adminApi.post("/magasin/add", magasin);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to create magasin");
+      return rejectWithValue(error.response?.data?.error || "Failed to create magasin");
     }
   }
 );
@@ -53,7 +53,7 @@ export const updateMagasin = createAsyncThunk<
       const response = await adminApi.put(`/magasin/update/${id}`, data);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to update magasin");
+      return rejectWithValue(error.response?.data?.error || "Failed to update magasin");
     }
   }
 );
@@ -64,7 +64,7 @@ export const deleteMagasin = createAsyncThunk<void, number, { rejectValue: strin
     try {
       await adminApi.delete(`/magasin/delete/${id}`);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to delete magasin");
+      return rejectWithValue(error.response?.data?.error || "Failed to delete magasin");
     }
   }
 );

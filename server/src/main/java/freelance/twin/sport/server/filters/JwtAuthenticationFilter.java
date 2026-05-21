@@ -1,5 +1,7 @@
 package freelance.twin.sport.server.filters;
 
+import freelance.twin.sport.server.user.exception.ActiveSessionException;
+import freelance.twin.sport.server.user.exception.InvalidSession;
 import freelance.twin.sport.server.user.service.CustomUserDetailsService;
 import freelance.twin.sport.server.user.service.TokenStoreService;
 import freelance.twin.sport.server.utils.JwtUtils;
@@ -9,26 +11,38 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private CustomUserDetailsService customUserDetailsService;
-    @Autowired
-    private JwtUtils jwtUtils;
-    @Autowired
-    private TokenStoreService tokenStoreService;
+    private final CustomUserDetailsService customUserDetailsService;
+    private final JwtUtils jwtUtils;
+    private final TokenStoreService tokenStoreService;
+    private final HandlerExceptionResolver resolver;
 
+    public JwtAuthenticationFilter(
+            CustomUserDetailsService customUserDetailsService,
+            JwtUtils jwtUtils,
+            TokenStoreService tokenStoreService,
+            @Lazy @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+        this.customUserDetailsService = customUserDetailsService;
+        this.jwtUtils = jwtUtils;
+        this.tokenStoreService = tokenStoreService;
+        this.resolver = resolver;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -52,12 +66,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     if (!isLatest) {
                         boolean hasAnySession = tokenStoreService.hasActiveSession(username, deviceType);
-                        if (hasAnySession) {
-                            clearAuth(response);
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\": \"Admin session invalidated. Please log in again.\"}");
 
+                        if (hasAnySession) {
+
+                            clearAuth(response);
+                            resolver.resolveException(request, response, null,
+                                    new ActiveSessionException("Active Session exists"));
                             return;
                         } else {
                             tokenStoreService.invalidateToken(username, deviceType);
@@ -80,12 +94,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (ExpiredJwtException ex) {
             clearAuth(response);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Session expired.\"}");
+            resolver.resolveException(request, response, null,
+                    new InvalidSession("Session Expired"));
             return;
         } catch (Exception ex) {
-
+            log.error("JWT authentication failed for user [{}]: {}", username, ex.getMessage());
+            resolver.resolveException(request, response, null, ex);
+            return;
         }
 
         filterChain.doFilter(request, response);
@@ -93,10 +108,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void clearAuth(HttpServletResponse response) {
         jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
-
         jwtUtils.buildClearCookie(response, "XSRF-TOKEN");
         jwtUtils.buildClearCookie(response, "JSESSIONID");
-
         SecurityContextHolder.clearContext();
     }
 }
