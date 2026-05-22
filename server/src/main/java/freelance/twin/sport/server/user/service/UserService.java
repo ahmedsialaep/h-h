@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -195,73 +196,78 @@ public class UserService {
                                      boolean force,
                                      HttpServletRequest request,
                                      HttpServletResponse response) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPwd()));
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPwd()));
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String userAgent = request.getHeader("User-Agent");
+            boolean isComputer = userAgent != null && !userAgent.toLowerCase().contains("mobile");
+            String deviceType = isComputer ? "computer" : "mobile";
+            String username = user.getUsername();
 
-        String userAgent = request.getHeader("User-Agent");
-        boolean isComputer = userAgent != null && !userAgent.toLowerCase().contains("mobile");
-        String deviceType = isComputer ? "computer" : "mobile";
-        String username = user.getUsername();
+            User authenticatedUser = findUserByUsername(username)
+                    .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        User authenticatedUser = findUserByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+            String role = authenticatedUser.getRoleUser().name();
+            boolean isAdmin = "ADMIN_TWIN".equalsIgnoreCase(role);
 
-        String role = authenticatedUser.getRoleUser().name();
-        boolean isAdmin = "ADMIN_TWIN".equalsIgnoreCase(role);
+            // ─── Active Session Check ─────────────────────────────────────────────────
+            if ((isAdmin) && !force && tokenStoreService.hasActiveSession(username, deviceType)) {
+                try {
+                    boolean isValid = jwtUtils.validateToken(request);
 
-        // ─── Active Session Check ─────────────────────────────────────────────────
-        if ((isAdmin) && !force && tokenStoreService.hasActiveSession(username, deviceType)) {
-            try {
-                boolean isValid = jwtUtils.validateToken(request);
-
-                if (isValid) {
-                    throw new ActiveSessionException("Another session is active on: " + deviceType);
-                }
-
-                String storedToken = tokenStoreService.getToken(username, deviceType);
-                if (storedToken != null) {
-                    try {
-                        jwtUtils.validateTokenString(storedToken);
+                    if (isValid) {
                         throw new ActiveSessionException("Another session is active on: " + deviceType);
-                    } catch (ExpiredJwtException e) {
+                    }
+
+                    String storedToken = tokenStoreService.getToken(username, deviceType);
+                    if (storedToken != null) {
+                        try {
+                            jwtUtils.validateTokenString(storedToken);
+                            throw new ActiveSessionException("Another session is active on: " + deviceType);
+                        } catch (ExpiredJwtException e) {
+                            tokenStoreService.invalidateToken(username, deviceType);
+                        }
+                    } else {
                         tokenStoreService.invalidateToken(username, deviceType);
                     }
-                } else {
+
+                } catch (ActiveSessionException e) {
+                    throw e;
+                } catch (ExpiredJwtException e) {
                     tokenStoreService.invalidateToken(username, deviceType);
                 }
-
-            } catch (ActiveSessionException e) {
-                throw e;
-            } catch (ExpiredJwtException e) {
-                tokenStoreService.invalidateToken(username, deviceType);
             }
+            // ─────────────────────────────────────────────────────────────────────────
+
+            boolean verified2FA = jwtUtils.checkIs2FaVerified(
+                    authenticatedUser.getLast2FaVerification(),
+                    authenticatedUser.getCodeVerification2FA()
+            );
+
+            String jwt = jwtUtils.generateToken(userDetails, deviceType, authenticatedUser);
+
+            if (isAdmin) {
+                tokenStoreService.storeToken(username, jwt, deviceType);
+            }
+
+            jwtUtils.buildJwtCookie(jwt, deviceType, response);
+
+            return Map.of(
+                    "userId", authenticatedUser.getId(),
+                    "username", authenticatedUser.getUsername(),
+                    "isAdmin", isAdmin,
+                    "deviceType", deviceType,
+                    "verified2FA", verified2FA,
+                    "message", verified2FA ? "Login successful" : "2FA requis"
+            );
+        }catch (BadCredentialsException e){
+            throw new FailedCredentialsException("Invalid email or password");
+        }catch (org.springframework.security.core.AuthenticationException ex) {
+            throw new AuthenticationException("Authentication failed");
         }
-        // ─────────────────────────────────────────────────────────────────────────
-
-        boolean verified2FA = jwtUtils.checkIs2FaVerified(
-                authenticatedUser.getLast2FaVerification(),
-                authenticatedUser.getCodeVerification2FA()
-        );
-
-        String jwt = jwtUtils.generateToken(userDetails, deviceType, authenticatedUser);
-
-        if (isAdmin) {
-            tokenStoreService.storeToken(username, jwt, deviceType);
-        }
-
-        jwtUtils.buildJwtCookie(jwt, deviceType, response);
-
-        return Map.of(
-                "userId", authenticatedUser.getId(),
-                "username", authenticatedUser.getUsername(),
-                "isAdmin", isAdmin,
-                "deviceType", deviceType,
-                "verified2FA", verified2FA,
-                "message", verified2FA ? "Login successful" : "2FA requis"
-        );
     }
 
     public Map<String, Object> validateSession(HttpServletRequest request, HttpServletResponse response) {
