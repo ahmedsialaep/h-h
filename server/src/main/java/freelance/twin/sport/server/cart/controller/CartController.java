@@ -25,13 +25,10 @@ import java.util.UUID;
 public class CartController {
     private final CartService cartService;
     private final UserService userService;
-    private final JwtUtils jwtUtils;
 
     @GetMapping
-    public ResponseEntity<?> getCart(HttpServletRequest request) {
+    public ResponseEntity<?> getCart() {
         try {
-            String token = jwtUtils.extractTokenFromCookies(request);
-            if (token == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No session");
 
             User user = userService.getCurrentUser();
             Cart cart = cartService.getOrCreateCart(user);
@@ -44,19 +41,15 @@ public class CartController {
 
     @PutMapping
     public ResponseEntity<?> updateCartItems(
-            @RequestBody List<CartItemDto> items,
-            HttpServletRequest request) {
-        try {
-            String token = jwtUtils.extractTokenFromCookies(request);
-            if (token == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No session");
+            @RequestBody List<CartItemDto> items
+            ) {
+
 
             User user = userService.getCurrentUser();
             Cart cart = cartService.getOrCreateCart(user);
 
             List<CartItemDto> updated = cartService.updateCartItems(cart, items, user.getId());
             return ResponseEntity.ok(updated);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
+
     }
 }

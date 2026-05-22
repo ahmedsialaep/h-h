@@ -42,3 +42,12 @@ export const STATUS_BY_DELIVERY_METHOD: Record<DeliveryMethod, Status[]> = {
     Status.ANNULEE,
   ],
 };
+export const allowedStatusTransitions: Record<Status, Status[]> = {
+  EN_ATTENTE: [Status.CONFIRMEE,Status.ANNULEE],
+  CONFIRMEE: [Status.PRETE_RETRAIT,Status.EXPEDIEE, Status.ANNULEE],
+  EXPEDIEE: [Status.LIVREE,Status.ANNULEE],
+  LIVREE: [Status.ANNULEE],
+  PRETE_RETRAIT: [Status.RECUPEREE,Status.ANNULEE],
+  RECUPEREE: [Status.ANNULEE],
+  ANNULEE: [],
+};

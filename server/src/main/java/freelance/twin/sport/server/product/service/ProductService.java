@@ -55,28 +55,6 @@ public class ProductService {
         );
     }
 
-    public Specification<Product> buildProductSearchSpec(String search) {
-        String normalizedSearch = "%" + search.toLowerCase().trim() + "%";
-
-
-        return (root, query, cb) -> {
-            query.distinct(true);
-
-            List<Predicate> predicates = new ArrayList<>();
-
-            Predicate namePred = cb.like(cb.lower(cb.trim(root.get("name"))), normalizedSearch);
-            Predicate refPred = cb.like(cb.lower(cb.trim(root.get("ref"))), normalizedSearch);
-
-            Join<Product, Brand> brandJoin = root.join("brand", JoinType.LEFT);
-            Predicate brandPred = cb.like(cb.lower(cb.trim(brandJoin.get("brand_name"))), normalizedSearch);
-
-            predicates.add(namePred);
-            predicates.add(refPred);
-            predicates.add(brandPred);
-
-            return cb.or(predicates.toArray(new Predicate[0]));
-        };
-    }
     public List<Product> retrieveAllProducts() {
         return productRepository.findAll();
     }

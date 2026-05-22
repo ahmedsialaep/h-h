@@ -20,7 +20,6 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const dispatch = useAppDispatch();
   const cart = useAppSelector((state) => state.cart.cart);
   const guestItems = useAppSelector((state) => state.cart.guestItems);
-  const variantStock = useAppSelector((state) => state.products.variantStock);
   const variantStockMap = useAppSelector((state) => state.products.variantStockMap);
 
   const user = useAppSelector((state) => state.auth.user);

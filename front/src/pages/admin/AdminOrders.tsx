@@ -4,17 +4,26 @@ import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { Status, DeliveryMethod, CommandeDto } from "@/models/Commande";
 import { fetchCommandes, setFilters, setPage, updateCommandeStatus } from "@/store/CommandeSlice";
 import { IMAGE_API_URL } from "@/config/config";
-import { ALL_STATUSES, STATUS_BY_DELIVERY_METHOD, STATUS_COLORS, STATUS_LABELS } from "@/models/constants/StatusConstants";
+import { ALL_STATUSES, allowedStatusTransitions, STATUS_BY_DELIVERY_METHOD, STATUS_COLORS, STATUS_LABELS } from "@/models/constants/StatusConstants";
 import EnhancedSelect from "@/components/admin/EnhancedSelect";
+import { useToast } from "../../hooks/use-toast";
 
 const AdminOrders = () => {
   const dispatch = useAppDispatch();
   const { items: orders, currentPage, totalPages, filters } = useAppSelector(state => state.commande);
   const [selectedStatuses, setSelectedStatuses] = useState<Status[]>([]);
   const [search, setSearch] = useState("");
-
-  const handleStatusChange = (id: number, status: Status) => {
-    dispatch(updateCommandeStatus({ id, status }));
+  const { toast } = useToast()
+  const handleStatusChange = async (id: number, status: Status) => {
+    try {
+      await dispatch(updateCommandeStatus({ id, status })).unwrap();
+    } catch (err: any) {
+      toast({
+        title: err?.errorCode ?? "Error",
+        description: err?.message ?? "une erreur est survenue",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePageChange = (page: number) => {
@@ -32,13 +41,14 @@ const AdminOrders = () => {
 
     dispatch(setFilters({ search: val.trim() || null, page: 0 }));
   };
-
+  const isStatusEnabled = (current: Status, target: Status) => {
+    return allowedStatusTransitions[current]?.includes(target);
+  };
   const toggleStatus = (s: Status) => {
     const updated = selectedStatuses.includes(s)
       ? selectedStatuses.filter((x) => x !== s)
       : [...selectedStatuses, s];
     setSelectedStatuses(updated);
-    console.log(">>> DISPATCHING STATUSES:", updated);
     dispatch(setFilters({ statuses: updated.length ? updated : null, page: 0 }));
   };
 
@@ -145,6 +155,7 @@ const AdminOrders = () => {
                 options={STATUS_BY_DELIVERY_METHOD[order.deliveryMethod].map((s) => ({
                   value: s,
                   label: STATUS_LABELS[s],
+                  disabled: !isStatusEnabled(order.status, s),
                 }))}
                 onChange={(val) => handleStatusChange(order.id, val as Status)}
                 className="w-48"

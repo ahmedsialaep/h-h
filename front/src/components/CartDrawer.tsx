@@ -39,7 +39,6 @@ const CartDrawer = () => {
     } else {
 
       const rawStock = variantStockMap[variantId] ?? Infinity
-      console.log(rawStock)
       const inGuestCart = guestItems.find((i) => i.variantId === variantId)?.quantity ?? 0;
       return Math.max(0, rawStock - inGuestCart);
     }
@@ -49,38 +48,75 @@ const CartDrawer = () => {
     const item = items.find((i) => i.variantId === variantId);
     if (!item) return;
 
+    // --- Removal ---
     if (quantity <= 0) {
       dispatch(removeItem(variantId));
       if (user && cart) {
         const updatedItems = cart.cartItemDtos.filter((i) => i.variantId !== variantId);
-        dispatch(syncCart(updatedItems));
+        try {
+          await dispatch(syncCart(updatedItems)).unwrap();
+        } catch (err: any) {
+          toast({
+            title: "Erreur",
+            description: err?.message || String(err),
+            variant: "destructive",
+          });
+        }
       }
       return;
     }
 
-    const isIncrementing = quantity > item.quantity;
+    // --- Guest-only frontend stock guard ---
+    if (!user && quantity > item.quantity) {
+      const result = await dispatch(fetchVariantStock(variantId)).unwrap();
 
-    if (isIncrementing) {
+      const latestStock =
+        typeof result === "number"
+          ? result
+          : result.availableQuantity;
 
-      const remaining = getRemainingStock(variantId);
+      const currentGuestItems = guestItems;
 
-      if (remaining <= 0) {
+      const guestQty =
+        currentGuestItems.find((i) => i.variantId === variantId)
+          ?.quantity ?? 0;
+
+      const remainingStock = latestStock - guestQty;
+
+      if (remainingStock <= 0) {
         toast({
           title: "Stock insuffisant",
           description: "Quantité maximale disponible atteinte.",
           variant: "destructive",
         });
-        return;
+        
       }
+      const safeQuantity = Math.min(quantity, latestStock);
+      dispatch(updateQuantity({variantId,quantity: safeQuantity}));
+      return;
     }
 
-    dispatch(updateQuantity({ variantId, quantity }));
+    // --- Logged-in: let the backend validate ---
     if (user && cart) {
       const updatedItems = cart.cartItemDtos.map((i) =>
         i.variantId === variantId ? { ...i, quantity } : i
       );
-      dispatch(syncCart(updatedItems));
+      try {
+        await dispatch(syncCart(updatedItems)).unwrap();
+        dispatch(updateQuantity({ variantId, quantity }));
+      } catch (err: any) {
+        toast({
+          title: "Stock insuffisant",
+          description: err?.message || String(err),
+          variant: "destructive",
+        });
+        
+      }
+      return;
     }
+
+    // --- Guest: update locally ---
+    dispatch(updateQuantity({ variantId, quantity }));
   };
 
   const handleRemoveItem = (variantId: number) => {

@@ -1,6 +1,7 @@
 package freelance.twin.sport.server.product.service;
 
 import freelance.twin.sport.server.product.entity.Brand;
+import freelance.twin.sport.server.product.exception.BrandNotFoundException;
 import freelance.twin.sport.server.product.repository.BrandRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class BrandService {
     // Retrieve a single brand by ID
     public Brand retrieveBrand(Long id) {
         return brandRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Brand not found with id: " + id));
+                .orElseThrow(() -> new BrandNotFoundException("Brand not found with id: " + id));
     }
 
     // Add or update a brand

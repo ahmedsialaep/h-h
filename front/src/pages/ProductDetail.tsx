@@ -4,29 +4,31 @@ import ProductCard from "@/components/ProductCard";
 import { ShoppingBag, Heart, ArrowLeft, Star, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { fetchProducts, fetchProductById, clearSelected } from "@/store/productSlice";
+import { fetchProducts, fetchProductById, clearSelected, fetchVariantStock } from "@/store/productSlice";
 import { addItem, syncCart } from "@/store/CartSlice";
 import { CartItemDto } from "@/models/CartItem";
 import Loading from "@/components/Loading";
 import EmptyState from "@/components/EmptyState";
 import { IMAGE_API_URL } from "@/config/config";
+import { useToast } from "../hooks/use-toast";
+import { store } from "../store/store";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("description");
-
+  const { toast } = useToast();
   const product = useAppSelector((state) => state.products.selected);
   const related = useAppSelector((state) => state.products.items);
   const selectedStatus = useAppSelector((state) => state.products.selectedStatus);
   const cart = useAppSelector((state) => state.cart.cart);
   const guestItems = useAppSelector((state) => state.cart.guestItems); // ← add
   const variantStockMap = useAppSelector((state) => state.products.variantStockMap);
+  const variantStock = useAppSelector((state) => state.products.variantStock);
 
   const user = useAppSelector((state) => state.auth.user);
 
-  // ✅ single source of truth for active cart items
   const activeItems = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ const ProductDetail = () => {
     dispatch(fetchProducts({
       filters: {
         page: 0,
-        pageSize: 4,
+        pageSize: 1,
         categories: [product.categorie],
         sortBy: "id",
         sortDir: "asc",
@@ -61,7 +63,6 @@ const ProductDetail = () => {
     }));
   }, [dispatch, product?.id]);
 
-  // ✅ now accounts for items already in cart/guestItems
   const getVariantStock = (size: string) => {
     const variant = (product?.variants ?? []).find((v) => String(v.size) === size);
     if (!variant) return 0;
@@ -71,13 +72,14 @@ const ProductDetail = () => {
     }
     const rawStock = variantStockMap[variant.id] ?? variant.availableQuantity ?? 0;
     const inGuestCart = guestItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
+
     return Math.max(0, rawStock - inGuestCart);
   };
 
   const handleAddToCart = async () => {
     if (!selectedSize || !product) return;
-
     const variant = (product.variants ?? []).find((v) => String(v.size) === selectedSize);
+
     if (!variant) return;
 
     const item: CartItemDto = {
@@ -105,18 +107,52 @@ const ProductDetail = () => {
         )
         : [...currentItems, item];
 
-      dispatch(addItem(item));
-      // ✅ strip null ids — backend assigns real IDs, null causes 403
-      dispatch(syncCart(updatedItems.map(({ id, ...rest }) => ({ ...rest, id: id ?? undefined }))));
-      dispatch(fetchProductById(Number(id)));
+      try {
+        
+        await dispatch(syncCart(updatedItems.map(({ id, ...rest }) => ({ ...rest, id: id ?? undefined })))).unwrap();
+        dispatch(addItem(item));
+      } catch (err: any) {
+        toast({
+          title: "Erreur",
+          description: `${err.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
     } else {
-      // Guest — stored locally by redux-persist
+      const result = await dispatch(fetchVariantStock(variant.id)).unwrap();
+
+      const latestStock =
+        typeof result === "number"
+          ? result
+          : result.availableQuantity;
+
+      const currentGuestItems = guestItems;
+
+      const guestQty =
+        currentGuestItems.find((i) => i.variantId === variant.id)
+          ?.quantity ?? 0;
+
+      const remainingStock = latestStock - guestQty;
+
+      if (remainingStock <= 0) {
+        toast({
+          title: "Stock insuffisant",
+          description: `Plus de stock pour la taille ${variant.size}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       dispatch(addItem(item));
     }
   };
   const selectedColor = selectedSize
-  ? (product.variants ?? []).find((v) => String(v.size) === selectedSize)?.color ?? null
-  : null;
+    ? (product?.variants ?? []).find(
+      (v) => String(v.size) === selectedSize
+    )?.color ?? null
+    : null;
   const tabLabels: Record<string, string> = {
     description: "Description",
     details: "Détails",
@@ -150,10 +186,10 @@ const ProductDetail = () => {
   }, 0);
 
   const availableSizes = [...new Set(
-  (product.variants ?? [])
-    .map((v) => v.size)
-    .filter((s): s is string => s !== undefined && s !== null)
-)].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
+    (product.variants ?? [])
+      .map((v) => v.size)
+      .filter((s): s is string => s !== undefined && s !== null)
+  )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
 
   const availableColors = [...new Set(
     (product.variants ?? [])
@@ -245,8 +281,8 @@ const ProductDetail = () => {
                   return (
                     <button
                       key={size}
-                      onClick={() => !outOfStock && setSelectedSize(size)}
-                      disabled={outOfStock}
+                      onClick={() => setSelectedSize(size)}
+
                       className={`min-w-[3rem] h-12 px-3 rounded-lg font-heading font-bold text-sm border transition-all ${selectedSize === size
                         ? "bg-primary text-primary-foreground border-primary"
                         : outOfStock
@@ -271,8 +307,8 @@ const ProductDetail = () => {
                   <span
                     key={color}
                     className={`px-3 py-1.5 border rounded-full text-xs font-body transition-all ${selectedColor === color
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card border-border text-muted-foreground"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card border-border text-muted-foreground"
                       }`}
                   >
                     {color}

@@ -4,8 +4,7 @@ import freelance.twin.sport.server.user.dto.Verify2FaRequest;
 import freelance.twin.sport.server.user.entity.Role;
 import freelance.twin.sport.server.user.entity.TwofaMethod;
 import freelance.twin.sport.server.user.entity.User;
-import freelance.twin.sport.server.user.exception.ActiveSessionException;
-import freelance.twin.sport.server.user.exception.InvalidSession;
+import freelance.twin.sport.server.user.exception.*;
 import freelance.twin.sport.server.user.repository.UserRepository;
 import freelance.twin.sport.server.config.mail.twofa.ITowFaMessageService;
 import freelance.twin.sport.server.config.mail.twofa.TowFaMessageFactory;
@@ -51,7 +50,7 @@ public class UserService {
         try {
             User existingUser = userRepository.findUserById(user.getId());
             if (existingUser == null) {
-                throw new RuntimeException("User not found");
+                throw new UserNotFoundException("User not found");
             }
 
             String submittedPwd = user.getPwd();
@@ -143,7 +142,7 @@ public class UserService {
             }
 
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("invalid 2FA verification method !");
+            throw new TwoFaRequired("invalid 2FA verification method !");
         }
 
         return false;
@@ -161,16 +160,16 @@ public class UserService {
         String deviceType = isComputer ? "computer" : "mobile";
 
         if (user == null) {
-            throw new RuntimeException("No authenticated user found.");
+            throw new AuthenticationException("No authenticated user found.");
         }
         if (user.getCodeVerification2FA() == null) {
-            throw new RuntimeException("No 2FA code found. Please request a new one.");
+            throw new TwoFaCodeNotFoundException("No 2FA code found. Please request a new one.");
         }
         if (!user.getCodeVerification2FA().equalsIgnoreCase(request.getVerificationCode())) {
-            throw new RuntimeException("Invalid 2FA code.");
+            throw new Invalid2FaException("Invalid 2FA code.");
         }
         if (user.getTwoFaCodeExpiry().isBefore(Instant.now())) {
-            throw new RuntimeException("2FA code expired.");
+            throw new Invalid2FaException("2FA code expired.");
         }
 
         user.setCodeVerification2FA(null);
@@ -208,7 +207,7 @@ public class UserService {
         String username = user.getUsername();
 
         User authenticatedUser = findUserByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         String role = authenticatedUser.getRoleUser().name();
         boolean isAdmin = "ADMIN_TWIN".equalsIgnoreCase(role);
@@ -310,7 +309,7 @@ public class UserService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("No authenticated user found");
+            throw new AuthenticationException("No authenticated user found");
         }
 
         Object principal = authentication.getPrincipal();

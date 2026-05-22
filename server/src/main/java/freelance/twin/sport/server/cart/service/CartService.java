@@ -5,8 +5,11 @@ import freelance.twin.sport.server.cart.entity.Cart;
 import freelance.twin.sport.server.cart.entity.CartItem;
 import freelance.twin.sport.server.cart.mapper.CartMapper;
 import freelance.twin.sport.server.cart.repository.CartRepository;
+import freelance.twin.sport.server.commande.exception.QteInsuffisantException;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
+import freelance.twin.sport.server.product.exception.ProductException;
+import freelance.twin.sport.server.product.exception.ProductNotFoundException;
 import freelance.twin.sport.server.product.repository.ProductRepository;
 import freelance.twin.sport.server.product.repository.ProductVarsRepository;
 import freelance.twin.sport.server.stockReservation.entity.ReservationType;
@@ -64,17 +67,16 @@ public class CartService {
 
         List<CartItem> cartItems = items.stream().map(dto -> {
             Product product = productRepository.findById(dto.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+                    .orElseThrow(() -> new ProductNotFoundException("Produit inconnue") {
+                    });
 
             ProductVars variant = productVarsRepository.findById(dto.getVariantId())
-                    .orElseThrow(() -> new RuntimeException("Variant not found"));
+                    .orElseThrow(() -> new RuntimeException("Variant du Produit inconnue"));
 
 
             int available = variant.getAvailableQuantity();
-            System.out.println(dto.getAvailableQte() +"-" + available);
             if (dto.getQuantity() > available) {
-                throw new RuntimeException("Stock insuffisant pour: " + variant.getSize()
-                        + " (disponible: " + available + ", demandé: " + dto.getQuantity() + ")");
+                throw new QteInsuffisantException("Stock insuffisant pour: " + variant.getSize());
             }
 
             // ← create new reservation

@@ -3,7 +3,7 @@ export interface PagedResponse<T> {
   totalPages: number;
   totalItems: number;
   currentPage: number;
-  size: number;
+  pageSize: number;
   first: boolean;
   last: boolean;
 }

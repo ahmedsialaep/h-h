@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface EnhancedSelectProps {
   label: string;
   value: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string, disabled?: boolean; }[];
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
@@ -74,9 +74,11 @@ const EnhancedSelect = ({
                   }}
                   className={cn(
                     "w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors",
-                    isSelected
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-foreground hover:bg-muted"
+                    option.disabled
+                      ? "opacity-40 cursor-not-allowed"
+                      : isSelected
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-foreground hover:bg-muted"
                   )}
                 >
                   <span

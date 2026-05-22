@@ -1,6 +1,7 @@
 package freelance.twin.sport.server.commande.service;
 
 import freelance.twin.sport.server.cart.entity.Cart;
+import freelance.twin.sport.server.cart.exception.EmptyCartException;
 import freelance.twin.sport.server.cart.repository.CartRepository;
 import freelance.twin.sport.server.commande.dto.CommandeFilterRequest;
 import freelance.twin.sport.server.commande.dto.CommandeItemRequest;
@@ -9,6 +10,8 @@ import freelance.twin.sport.server.commande.entity.CommandItem;
 import freelance.twin.sport.server.commande.entity.Commande;
 import freelance.twin.sport.server.commande.entity.DeliveryMethod;
 import freelance.twin.sport.server.commande.entity.Status;
+import freelance.twin.sport.server.commande.exception.EmptyRequestException;
+import freelance.twin.sport.server.commande.exception.QteInsuffisantException;
 import freelance.twin.sport.server.commande.repository.CommandeRepository;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
@@ -120,7 +123,7 @@ public class CommandeService {
                     // no reservation → guest order or missing reservation → check available stock
                     int available = variant.getAvailableQuantity();
                     if (available < item.getQuantity()) {
-                        throw new RuntimeException(
+                        throw new QteInsuffisantException(
                                 "Stock insuffisant pour: " + item.getProduct().getName() +
                                         " (disponible: " + available + ", demandé: " + item.getQuantity() + ")"
                         );
@@ -177,6 +180,7 @@ public class CommandeService {
         return commandeRepository.save(commande);
     }
 
+    @Transactional
     public Commande createCommande(CommandeRequest request, UUID userId) {
         Commande commande = new Commande();
         commande.setRef("CMD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
@@ -221,7 +225,7 @@ public class CommandeService {
     }
     private void buildItemsFromCart(Commande commande, Cart cart) {
         if (cart.getItems().isEmpty())
-            throw new RuntimeException("Panier vide");
+            throw new EmptyCartException("Panier vide");
 
         List<CommandItem> items = cart.getItems().stream().map(cartItem -> {
             CommandItem item = new CommandItem();
@@ -240,7 +244,7 @@ public class CommandeService {
     }
     private void buildItemsFromRequest(Commande commande, List<CommandeItemRequest> requestItems) {
         if (requestItems == null || requestItems.isEmpty())
-            throw new RuntimeException("Aucun article dans la commande");
+            throw new EmptyRequestException("Aucun article dans la commande");
 
         List<CommandItem> items = requestItems.stream().map(req -> {
             Product product = productRepository.findById(req.getProductId())

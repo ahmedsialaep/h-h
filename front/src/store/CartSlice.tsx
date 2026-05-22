@@ -47,6 +47,7 @@ export const syncCart = createAsyncThunk<
       const response = await api.put<CartItemDto[]>("/cart", items);
       return response.data;
     } catch (error: any) {
+      
       return rejectWithValue(error.response?.data?.error || "Failed to sync cart");
     }
   }
@@ -161,6 +162,7 @@ const cartSlice = createSlice({
       const item = items.find((i) => i.variantId === action.payload.variantId);
       if (item) {
         item.quantity = action.payload.quantity;
+        console.log(action.payload.quantity)
         if (item.quantity <= 0) {
           if (state.cart) {
             state.cart.cartItemDtos = state.cart.cartItemDtos.filter(

@@ -1,5 +1,6 @@
 package freelance.twin.sport.server.product.controller;
 
+import freelance.twin.sport.server.config.custom.PagedResponse;
 import freelance.twin.sport.server.product.dto.ProductDto;
 import freelance.twin.sport.server.product.dto.ProductFilterRequest;
 import freelance.twin.sport.server.product.entity.Categorie;
@@ -24,7 +25,7 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllProducts(
+    public ResponseEntity<PagedResponse<ProductDto>> getAllProducts(
             @RequestParam(required = false) List<Long> brandIds,
             @RequestParam(required = false) List<Genre> genres,
             @RequestParam(required = false) List<Categorie> categories,
@@ -59,19 +60,12 @@ public class ProductController {
         filter.setSearch(search);
         Page<Product> productsPage = productService.retrieveAllProducts(filter);
 
-        List<ProductDto> productsDTO = productsPage.getContent()
-                .stream()
-                .map(ProductMapper::toDTO)
-                .toList();
+        Page<ProductDto> productDtoPage = productsPage.map(ProductMapper::toDTO);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", productsDTO);
-        response.put("currentPage", productsPage.getNumber());
-        response.put("totalItems", productsPage.getTotalElements());
-        response.put("totalPages", productsPage.getTotalPages());
-        response.put("pageSize", productsPage.getSize());
+        PagedResponse<ProductDto> response = PagedResponse.of(productDtoPage);
 
         return ResponseEntity.ok(response);
+
     }
     @GetMapping("/{id}")
     public ResponseEntity<ProductDto> findProductById(@PathVariable(name = "id") Long id_product) {

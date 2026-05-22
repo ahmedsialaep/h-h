@@ -25,10 +25,9 @@ import java.util.function.Function;
 public class JwtUtils {
 
     private final SecretKey secretKey;
-    private final SecretKey secretUtilsKey;
     private final long computerExpiration;
     private final long mobileExpiration;
-    private final long reservationExpiration;
+
     @Value("${app.security.cookieName}")
     public String COOKIE_NAME;
     @Value("${app.security.verification2FaDuration}")
@@ -49,13 +48,10 @@ public class JwtUtils {
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.secret.utils}") String UtilsSecret,
             @Value("${jwt.expiration.computer}") long computerExpiration,
-            @Value("${jwt.expiration.mobile}") long mobileExpiration,
-            @Value("${jwt.expiration.reservation}") long reservationExpiration) {
+            @Value("${jwt.expiration.mobile}") long mobileExpiration) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
-        this.secretUtilsKey = Keys.hmacShaKeyFor(UtilsSecret.getBytes());
         this.computerExpiration = computerExpiration;
         this.mobileExpiration = mobileExpiration;
-        this.reservationExpiration = reservationExpiration;
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
