@@ -6,7 +6,7 @@ import { Type } from "@/models/Type";
 import { fetchBrands } from "@/store/brandSlice";
 import { fetchTypes } from "@/store/TypeSlice";
 import { useAppDispatch } from "@/store/hook";
-import { createProduct, updateProduct, saveVariants } from "@/store/productSlice";
+import { createProduct, updateProduct, saveVariants, fetchVarsByProductById } from "@/store/productSlice";
 import { IMAGE_API_URL } from "@/config/config";
 import { CATEGORIE_LABELS, GENRE_LABELS } from "@/models/constants/GenderConstant";
 import EnhancedSelect from "@/components/admin/EnhancedSelect";
@@ -32,7 +32,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
   const [variantErrors, setVariantErrors] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [sizeType, setSizeType] = useState(() =>
-    inferSizeType((initialData?.variants ?? []).map((v) => v.size))
+    inferSizeType((initialData?.variantDTOS ?? []).map((v) => v.size))
   ); const [showStockWarning, setShowStockWarning] = useState(false);
   const [stockReductions, setStockReductions] = useState<string[]>([]);
   const [stockReductionConfirmed, setStockReductionConfirmed] = useState(false);
@@ -54,19 +54,28 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
     image: initialData?.image || undefined,
   });
 
-  const [variants, setVariants] = useState<VariantRow[]>(
-    initialData?.variants?.map((v) => ({
-      size: v.size ?? "",
-      color: v.color ?? "",
-      stock: v.stock,
-    })) || [emptyVariant()]
-  );
+  const [variants, setVariants] = useState<VariantRow[]>();
 
   useEffect(() => {
     dispatch(fetchBrands()).unwrap().then((data) => setBrands(data));
     dispatch(fetchTypes()).unwrap().then((data) => setTypes(data));
   }, [dispatch]);
+  useEffect(() => {
+    if (!initialData?.id) return;
 
+    dispatch(fetchVarsByProductById(initialData.id))
+      .unwrap()
+      .then((data) => {
+        setVariants(
+          data.map((v) => ({
+            id: v.id,
+            size: v.size ?? "",
+            color: v.color ?? "",
+            stock: v.stock,
+          }))
+        );
+      });
+  }, [initialData?.id]);
   useEffect(() => {
     if (initialData) {
       setForm({
@@ -83,17 +92,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
         brandId: initialData.brandId || 0,
         typeId: initialData.typeId || 0,
       });
-      setVariants(
-        initialData?.variants?.map((v) => ({
-          id: v.id,
-          size: v.size ?? "",
-          color: v.color ?? "",
-          stock: v.stock,
-        })) || [emptyVariant()]
-      );
       setImagePreview(initialData.image ? `${IMAGE_API_URL}/${initialData.image}` : undefined);
       setImageFile(undefined);
-      setSizeType(inferSizeType((initialData?.variants ?? []).map((v) => v.size)));
+      setSizeType(inferSizeType((initialData?.variantDTOS ?? []).map((v) => v.size)));
 
     }
   }, [initialData]);
@@ -141,35 +142,60 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
   };
   const handleVariantsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setVariantErrors([]);
 
     const validationErrors: string[] = [];
+
     variants.forEach((v, i) => {
-      if (v.size === "") validationErrors.push(`Ligne ${i + 1}: taille requise`);
-      if (!v.color.trim()) validationErrors.push(`Ligne ${i + 1}: couleur requise`);
-      if (v.stock < 0) validationErrors.push(`Ligne ${i + 1}: stock invalide`);
-    });
-    if (validationErrors.length) { setVariantErrors(validationErrors); return; }
-
-    // check for stock reductions on existing variants
-    if (initialData?.variants) {
-      const reductions: string[] = [];
-      variants.forEach((v) => {
-        if (!v.id) return;
-        const original = initialData.variants!.find((ov) => ov.id === v.id);
-        if (original && v.stock < original.stock) {
-          const delta = original.stock - v.stock;
-          reductions.push(
-            `Taille ${v.size} / ${v.color}: stock réduit de ${original.stock} → ${v.stock} (−${delta})`
-          );
-        }
-      });
-
-      if (reductions.length > 0 && !stockReductionConfirmed) {
-        setStockReductions(reductions);
-        setShowStockWarning(true);
-        return;
+      if (v.size === "") {
+        validationErrors.push(`Ligne ${i + 1}: taille requise`);
       }
+
+      if (!v.color.trim()) {
+        validationErrors.push(`Ligne ${i + 1}: couleur requise`);
+      }
+
+      if (v.stock < 0) {
+        validationErrors.push(`Ligne ${i + 1}: stock invalide`);
+      }
+    });
+
+    if (validationErrors.length) {
+      setVariantErrors(validationErrors);
+      return;
+    }
+
+    /*
+     * CHECK STOCK REDUCTIONS
+     */
+
+    const reductions: string[] = [];
+
+    variants.forEach((v) => {
+
+      if (!v.id) return;
+
+      const original = variants.find(
+        (ov) => ov.id === v.id
+      );
+
+      if (!original) return;
+
+      if (v.stock < original.stock) {
+
+        const delta = original.stock - v.stock;
+
+        reductions.push(
+          `Taille ${v.size} / ${v.color}: stock réduit de ${original.stock} → ${v.stock} (-${delta})`
+        );
+      }
+    });
+
+    if (reductions.length > 0 && !stockReductionConfirmed) {
+      setStockReductions(reductions);
+      setShowStockWarning(true);
+      return;
     }
 
     await submitVariants();

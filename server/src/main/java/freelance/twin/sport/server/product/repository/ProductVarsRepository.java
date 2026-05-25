@@ -16,4 +16,17 @@ public interface ProductVarsRepository extends JpaRepository<ProductVars, Long> 
     @Query("SELECT v FROM ProductVars v WHERE v.id IN :ids")
     List<ProductVars> findAllByIds(@Param("ids") List<Long> ids);
     void deleteProductVarsByProduct(Product product);
+
+    @Query("""
+    SELECT
+        v.product.id,
+        COALESCE(SUM(v.stock), 0),
+        COALESCE(SUM(v.availableQuantity), 0)
+    FROM ProductVars v
+    WHERE v.product.id IN :productIds
+    GROUP BY v.product.id
+""")
+    List<Object[]> getStockStats(
+            @Param("productIds") List<Long> productIds
+    );
 }

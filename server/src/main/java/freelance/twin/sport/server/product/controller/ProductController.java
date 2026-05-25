@@ -24,16 +24,22 @@ public class ProductController {
 
     private final ProductService productService;
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductDto> findProductById(@PathVariable(name = "id") Long id_product) {
+        Product found = productService.retrieveProduct(id_product);
+        ProductDto productDto = ProductMapper.toDetailDTO(found);
+        return ResponseEntity.ok(productDto);
+    }
     @GetMapping
-    public ResponseEntity<PagedResponse<ProductDto>> getAllProducts(
+    public ResponseEntity<PagedResponse<ProductDto>> getAllProductShop(
             @RequestParam(required = false) List<Long> brandIds,
             @RequestParam(required = false) List<Genre> genres,
             @RequestParam(required = false) List<Categorie> categories,
             @RequestParam(required = false) List<Long> types,
-            @RequestParam(required = false) List<String> colors,
             @RequestParam(required = false) Boolean newArrival,
-            @RequestParam(required = false) List<Boolean> marketVisible,
+            @RequestParam(required = false) List<String> colors,
             @RequestParam(required = false) List<String> size,
+            @RequestParam(required = false) List<Boolean> marketVisible,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(defaultValue = "0") int page,
@@ -47,30 +53,23 @@ public class ProductController {
         filter.setGenres(genres);
         filter.setCategories(categories);
         filter.setTypes(types);
-        filter.setColors(colors);
         filter.setNewArrival(newArrival);
-        filter.setSize(size);
         filter.setMinPrice(minPrice);
         filter.setMaxPrice(maxPrice);
+        filter.setColors(colors);
+        filter.setSize(size);
         filter.setPage(page);
         filter.setPageSize(pageSize);
         filter.setSortBy(sortBy);
         filter.setSortDir(sortDir);
         filter.setMarketVisible(marketVisible);
         filter.setSearch(search);
-        Page<Product> productsPage = productService.retrieveAllProducts(filter);
+        Page<ProductDto> productsPage =
+                productService.retrieveAllProductsShop(filter);
 
-        Page<ProductDto> productDtoPage = productsPage.map(ProductMapper::toDTO);
-
-        PagedResponse<ProductDto> response = PagedResponse.of(productDtoPage);
+        PagedResponse<ProductDto> response =
+                PagedResponse.of(productsPage);
 
         return ResponseEntity.ok(response);
-
-    }
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductDto> findProductById(@PathVariable(name = "id") Long id_product) {
-        Product found = productService.retrieveProduct(id_product);
-        ProductDto productDto = ProductMapper.toDTO(found);
-        return ResponseEntity.ok(productDto);
     }
 }

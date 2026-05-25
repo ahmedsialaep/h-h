@@ -94,7 +94,7 @@ public class AdminController {
             product.setImage(fileName);
         }
         Product saved = productService.addOrUpdateProduct(product);
-        return new ResponseEntity<>(ProductMapper.toDTO(saved), HttpStatus.CREATED);
+        return new ResponseEntity<>(ProductMapper.toDetailDTO(saved), HttpStatus.CREATED);
     }
 
     @PutMapping(value = "/product/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -113,7 +113,7 @@ public class AdminController {
             product.setImage(imageStorageService.saveImage(image));
         }
         Product saved = productService.addOrUpdateProduct(product);
-        return ResponseEntity.ok(ProductMapper.toDTO(saved));
+        return ResponseEntity.ok(ProductMapper.toDetailDTO(saved));
     }
 
     @DeleteMapping("/product/{id}")

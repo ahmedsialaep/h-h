@@ -18,8 +18,9 @@ export interface ProductDTO {
   typeId: number;
   typeName: string;
 
-  variants: ProductVariantDTO[];
-
+  totalStock: number;
+  totalAvailableQte: number;
+  variantDTOS: ProductVariantDTO[];
   description?: string;
   newArrival: boolean;
   marketVisible: boolean;

@@ -26,14 +26,20 @@ const AdminProducts = () => {
   const [searchInput, setSearchInput] = useState("");
 
   useEffect(() => {
+
     const timeout = setTimeout(() => {
+
       dispatch(fetchProducts({
         filters,
         search: searchInput.trim() || null,
       }));
-    }, searchInput ? 400 : 0);
+
+    }, 400);
+
     return () => clearTimeout(timeout);
-  }, [searchInput, filters]);
+
+  }, [filters, searchInput]);
+
   useEffect(() => {
     dispatch(fetchTypes());
   }, [dispatch]);
@@ -233,19 +239,23 @@ const AdminProducts = () => {
                     <td className="p-4 hidden md:table-cell text-muted-foreground">{product.categorie}</td>
                     <td className="p-4 font-heading font-bold text-foreground">{product.price} TND</td>
                     <td className="p-4 hidden md:table-cell">
-                      <span className={`font-heading font-bold text-sm ${(product.variants ?? []).reduce((acc, v) => acc + v.stock, 0) <= 5
-                        ? "text-primary"
-                        : "text-foreground"
-                        }`}>
-                        {(product.variants ?? []).reduce((acc, v) => acc + v.stock, 0)}
+                      <span
+                        className={`font-heading font-bold text-sm ${product.totalStock <= 5
+                          ? "text-primary"
+                          : "text-foreground"
+                          }`}
+                      >
+                        {product.totalStock}
                       </span>
                     </td>
                     <td className="p-4 hidden md:table-cell">
-                      <span className={`font-heading font-bold text-sm ${(product.variants ?? []).reduce((acc, v) => acc + v.stock, 0) <= 5
-                        ? "text-primary"
-                        : "text-foreground"
-                        }`}>
-                        {(product.variants ?? []).reduce((acc, v) => acc + v.availableQuantity, 0)}
+                      <span
+                        className={`font-heading font-bold text-sm ${product.totalAvailableQte <= 5
+                          ? "text-primary"
+                          : "text-foreground"
+                          }`}
+                      >
+                        {product.totalAvailableQte}
                       </span>
                     </td>
                     <td className="p-4 hidden md:table-cell">

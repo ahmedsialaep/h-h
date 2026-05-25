@@ -64,7 +64,7 @@ const ProductDetail = () => {
   }, [dispatch, product?.id]);
 
   const getVariantStock = (size: string) => {
-    const variant = (product?.variants ?? []).find((v) => String(v.size) === size);
+    const variant = (product?.variantDTOS ?? []).find((v) => String(v.size) === size);
     if (!variant) return 0;
     if (user) {
       const item = cart?.cartItemDtos?.find((i) => i.variantId === variant.id);
@@ -78,7 +78,7 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!selectedSize || !product) return;
-    const variant = (product.variants ?? []).find((v) => String(v.size) === selectedSize);
+    const variant = (product.variantDTOS ?? []).find((v) => String(v.size) === selectedSize);
 
     if (!variant) return;
 
@@ -110,7 +110,7 @@ const ProductDetail = () => {
       try {
         
         await dispatch(syncCart(updatedItems.map(({ id, ...rest }) => ({ ...rest, id: id ?? undefined })))).unwrap();
-        dispatch(addItem(item));
+        
       } catch (err: any) {
         toast({
           title: "Erreur",
@@ -149,7 +149,7 @@ const ProductDetail = () => {
     }
   };
   const selectedColor = selectedSize
-    ? (product?.variants ?? []).find(
+    ? (product?.variantDTOS ?? []).find(
       (v) => String(v.size) === selectedSize
     )?.color ?? null
     : null;
@@ -180,24 +180,24 @@ const ProductDetail = () => {
 
   if (!product) return null;
 
-  const totalStock = (product.variants ?? []).reduce((acc, v) => {
+  const totalStock = (product.variantDTOS ?? []).reduce((acc, v) => {
     const inCart = activeItems.find((i) => i.variantId === v.id)?.quantity ?? 0;
     return acc + Math.max(0, (v.availableQuantity ?? 0) - inCart);
   }, 0);
 
   const availableSizes = [...new Set(
-    (product.variants ?? [])
+    (product.variantDTOS ?? [])
       .map((v) => v.size)
       .filter((s): s is string => s !== undefined && s !== null)
   )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
 
   const availableColors = [...new Set(
-    (product.variants ?? [])
+    (product.variantDTOS ?? [])
       .map((v) => v.color)
       .filter((c): c is string => c !== undefined)
   )];
 
-  const isSoldOut = (product.variants ?? []).every((v) => {
+  const isSoldOut = (product.variantDTOS ?? []).every((v) => {
 
     return (v.availableQuantity ?? 0) <= 0;
   });

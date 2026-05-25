@@ -3,6 +3,7 @@ package freelance.twin.sport.server.product.service;
 import freelance.twin.sport.server.product.dto.ProductVariantDTO;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
+import freelance.twin.sport.server.product.exception.ProductNotFoundException;
 import freelance.twin.sport.server.product.repository.ProductRepository;
 import freelance.twin.sport.server.product.repository.ProductVarsRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -42,7 +43,7 @@ public class ProductVarsService {
     @Transactional
     public List<ProductVars> saveVariants(Long productId, List<ProductVars> incomingVariants) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
         List<ProductVars> result = new ArrayList<>();
 
@@ -50,7 +51,7 @@ public class ProductVarsService {
             if (incoming.getId() != null) {
 
                 ProductVars existing = productVarsRepository.findById(incoming.getId())
-                        .orElseThrow(() -> new EntityNotFoundException("Variant not found"));
+                        .orElseThrow(() -> new ProductNotFoundException("Variant not found"));
 
                 int stockDelta = incoming.getStock() - existing.getStock();
                 int newAvailable = existing.getAvailableQuantity() + stockDelta;

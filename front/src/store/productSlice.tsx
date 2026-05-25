@@ -17,7 +17,8 @@ interface ProductState {
   status: Status;
   selectedStatus: Status;
   error: string | null;
-  variantStock: ProductVariantDTO ; 
+  variantStock: ProductVariantDTO;
+  variantStocks: ProductVariantDTO[];
   variantStockMap: Record<number, number>,
   variantStockStatus: Status;
 }
@@ -51,6 +52,7 @@ const initialState: ProductState = {
   selectedStatus: "idle",
   error: null,
   variantStock: null,
+  variantStocks: [],
   variantStockStatus: "idle",
   variantStockMap: {},
 };
@@ -79,6 +81,7 @@ export const fetchProducts = createAsyncThunk<
     return rejectWithValue(error.response?.data?.error || "Failed to fetch products");
   }
 });
+
 
 export const fetchProductById = createAsyncThunk<
   ProductDTO,
@@ -140,6 +143,24 @@ export const deleteProduct = createAsyncThunk<number, number, { rejectValue: str
     }
   }
 );
+
+export const fetchVarsByProductById = createAsyncThunk<
+  ProductVariantDTO[],
+  number,
+  { rejectValue: string }
+>("products/fetchVarsByProductId", async (productId, { rejectWithValue }) => {
+  try {
+    const response = await api.get<ProductVariantDTO[]>(
+      `/product-vars/${productId}`
+    );
+
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.error || "Failed to fetch product variants"
+    );
+  }
+});
 
 export const saveVariants = createAsyncThunk<
   void,
@@ -240,6 +261,7 @@ const productSlice = createSlice({
         state.status = "failed";
         state.error = action.payload ?? "Unknown error";
       })
+
       .addCase(fetchProductById.pending, (state) => {
         state.selectedStatus = "loading";
         state.selected = null;
@@ -257,6 +279,19 @@ const productSlice = createSlice({
       .addCase(updateProduct.fulfilled, () => { })
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.items = state.items.filter((p) => p.id !== action.payload);
+      })
+      .addCase(fetchVarsByProductById.pending, (state) => {
+        state.selectedStatus = "loading";
+        state.selected = null;
+        state.error = null;
+      })
+      .addCase(fetchVarsByProductById.fulfilled, (state, action) => {
+        state.selectedStatus = "succeeded";
+        state.variantStocks = action.payload;
+      })
+      .addCase(fetchVarsByProductById.rejected, (state, action) => {
+        state.selectedStatus = "failed";
+        state.error = action.payload ?? "Unknown error";
       })
       .addCase(fetchVariantStock.pending, (state) => {
         state.variantStockStatus = "loading";

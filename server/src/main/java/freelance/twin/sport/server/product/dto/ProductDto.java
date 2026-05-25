@@ -24,9 +24,11 @@ public class ProductDto {
     private LocalDateTime createdAt;
     private Long typeId;
     private String typeName;
-    private List<ProductVariantDTO> variants;
     private String description;
+    private List<ProductVariantDTO> variantDTOS;
     private boolean newArrival;
     private boolean marketVisible;
     private double averageRating;
+    private int totalStock;
+    private int totalAvailableQte;
 }

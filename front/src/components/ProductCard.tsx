@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingBag } from "lucide-react";
+import { SearchCheckIcon, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 import { ProductDTO } from "@/models/Product";
 import { IMAGE_API_URL } from "@/config/config";
@@ -25,21 +25,26 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const user = useAppSelector((state) => state.auth.user);
   const { toast } = useToast();
 
-  const getAvailableStock = (variant: ProductVariantDTO) => {
-    if (user) {
-      const item = cart?.cartItemDtos?.find((i) => i.variantId === variant.id);
-      return item?.availableQte ?? variant.availableQuantity ?? 0;
-    }
-    const rawStock = variantStockMap[variant.id] ?? variant.availableQuantity ?? 0;
-    const inGuestCart = guestItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
-    return Math.max(0, rawStock - inGuestCart);
-  };
+  const getAvailableStock = () => {
+  if (user) {
+    const item = cart?.cartItemDtos?.find((i) => i.productId === product.id);
 
-  const isSoldOut =
-    !product.variants?.length ||
-    product.variants.every((v) => getAvailableStock(v) <= 0);
+    return item?.availableQte ?? product.totalAvailableQte ?? 0;
+  }
 
-  const handleQuickAdd = async (e: React.MouseEvent) => {
+  const inGuestCart = guestItems
+    .filter((i) => i.productId === product.id)
+    .reduce((acc, item) => acc + item.quantity, 0);
+
+  return Math.max(
+    0,
+    (product.totalAvailableQte ?? 0) - inGuestCart
+  );
+};
+
+const isSoldOut = getAvailableStock() <= 0;
+
+  /*const handleQuickAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -92,7 +97,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
         )
       );
     }
-  };
+  };*/
 
   return (
     <motion.div
@@ -131,11 +136,11 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
           {!isSoldOut ? (
             <button
-              onClick={handleQuickAdd}
+              
               className="absolute bottom-0 left-0 right-0 bg-primary text-white font-bold text-sm py-3 translate-y-full group-hover:translate-y-0 transition"
             >
-              <ShoppingBag size={16} className="inline mr-2" />
-              Ajout Rapide
+              <SearchCheckIcon size={16} className="inline mr-2" />
+              Voir produit
             </button>
           ) : (
             <div className="absolute bottom-0 left-0 right-0 bg-muted text-muted-foreground font-bold text-sm py-3 text-center">

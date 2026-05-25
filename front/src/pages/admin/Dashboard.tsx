@@ -76,12 +76,12 @@ const Dashboard = () => {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
-  
-  const lowStockProducts = products.filter((p) =>
-    (p.variants ?? []).reduce((acc, v) => acc + (v.availableQuantity ?? 0), 0) <= 5
+
+  const lowStockProducts = products.filter(
+    (p) => (p.totalAvailableQte ?? 0) <= 5
   );
 
-  
+
   const totalRevenue = orders.reduce((acc, o) => acc + o.totalPrice, 0);
   const totalYearlyProfit = monthlyRevenue.reduce((s, m) => s + m.profit, 0);
 
@@ -92,7 +92,7 @@ const Dashboard = () => {
     { label: "Stock Faible", icon: AlertTriangle, value: `${lowStockProducts.length}` },
   ];
 
-  
+
   const lowStockTotalPages = Math.ceil(lowStockProducts.length / LOW_STOCK_PAGE_SIZE);
 
   const paginatedLowStock = lowStockProducts.slice(
@@ -268,7 +268,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <span className="text-primary font-heading font-bold text-sm">
-                      {(product.variants ?? []).reduce((acc, v) => acc + v.stock, 0)} restants
+                      {product.totalStock ?? 0} restants
                     </span>
                   </div>
                 ))}
@@ -288,8 +288,8 @@ const Dashboard = () => {
                         key={i}
                         onClick={() => setLowStockPage(i)}
                         className={`w-7 h-7 rounded-lg font-heading text-xs font-bold transition-colors ${lowStockPage === i
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-background border border-border text-muted-foreground hover:text-foreground"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background border border-border text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         {i + 1}
