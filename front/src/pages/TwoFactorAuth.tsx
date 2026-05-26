@@ -52,7 +52,7 @@ const TwoFactorAuth = () => {
         } catch (error: any) {
             toast({
                 title: "Erreur",
-                description: error?.error || "Code invalide ou expiré",
+                description: error?.message || "Code invalide ou expiré",
                 variant: "destructive"
             });
         } finally {

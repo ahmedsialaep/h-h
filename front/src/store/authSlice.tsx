@@ -50,7 +50,7 @@ export const registerUser = createAsyncThunk<
     const response = await api.post("/auth/register", userData);
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data);
+    return rejectWithValue(error.response?.data?.error);
   }
 });
 
@@ -63,7 +63,7 @@ export const send2FA = createAsyncThunk<
     const response = await api.post("/auth/2fa/send");
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data);
+    return rejectWithValue(error.response?.data?.error);
   }
 });
 
@@ -76,7 +76,7 @@ export const verify2FA = createAsyncThunk<
     const response = await api.post("/auth/2fa/verify", verifCode);
     return response.data;
   } catch (error: any) {
-    return rejectWithValue(error.response?.data);
+    return rejectWithValue(error.response?.data?.error);
   }
 });
 
@@ -109,6 +109,11 @@ export const loginUser = createAsyncThunk<
                 existingSession: true,
                 deviceType: errorData.deviceType,
             });
+        }
+        else {
+          return rejectWithValue(
+        error.response?.data?.error || "Failed to merge cart"
+      );
         }
 
     }

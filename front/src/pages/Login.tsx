@@ -55,7 +55,7 @@ const Login = () => {
             } else {
                 toast({
                     title: "Erreur",
-                    description: err?.error || "Identifiants invalides",
+                    description: err?.message || "Identifiants invalides",
                     variant: "destructive"
                 });
             }
