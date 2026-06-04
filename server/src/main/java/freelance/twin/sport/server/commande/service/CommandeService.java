@@ -230,7 +230,13 @@ public class CommandeService {
             throw new EmptyCartException("Panier vide");
 
         List<CommandItem> items = cart.getItems().stream().map(cartItem -> {
-
+            int available = cartItem.getVariant().getAvailableQuantity();
+            if (available < cartItem.getQuantity()) {
+                throw new QteInsuffisantException(
+                        "Stock insuffisant pour: " + cartItem.getProduct().getName() +
+                                " (disponible: " + available + ", demandé: " + cartItem.getQuantity() + ")"
+                );
+            }
             CommandItem item = new CommandItem();
             item.setCommande(commande);
             item.setProduct(cartItem.getProduct());
