@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { persistor, store } from "@/store/store";
 import { restoreSession } from "@/store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -180,9 +181,11 @@ const App = () => (
     <PersistGate loading={<Loading fullScreen size="lg" />} persistor={persistor}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ThemeProvider>
         <Toaster />
         <Sonner />
         <AppContent />
+        </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
     </PersistGate>

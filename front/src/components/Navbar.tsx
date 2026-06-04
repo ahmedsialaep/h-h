@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { clearCart, toggleCart } from "@/store/CartSlice";
+import ThemeToggle from "@/components/ThemeToggle";
+
 
 const navLinks = [
   {
@@ -68,7 +70,7 @@ const Navbar = () => {
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16 md:h-20">
             <Link to="/" className="font-heading font-black text-xl md:text-2xl tracking-tight text-foreground">
-              JUMEAUX<span className="text-primary"> SPORTS</span>
+              HASSEN &<span className="text-primary"> HOUSSINE</span>
             </Link>
 
             {/* Desktop nav links */}
@@ -124,7 +126,7 @@ const Navbar = () => {
               >
                 {user?.isAdmin ? <Warehouse size={20} /> : <Search size={20} />}
               </button>
-
+              <ThemeToggle className="hidden md:block" />
               {/* User dropdown */}
               {user ? (
                 <DropdownMenu>

@@ -25,7 +25,7 @@ const Checkout = () => {
   const cart = useAppSelector((state) => state.cart.cart);
   const user = useAppSelector((state) => state.auth.user);
   const items = user ? (cart?.cartItemDtos ?? []) : (guestItems ?? []);
-  
+
   const [step, setStep] = useState(0);
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "delivery">("pickup");
   const [selectedWilaya, setSelectedWilaya] = useState(REGION_LABEL[0]);
@@ -112,7 +112,11 @@ const Checkout = () => {
       toast({ title: "Commande confirmée !", description: "Votre commande a été passée avec succès." });
       navigate("/");
     } catch (err: any) {
-      toast({ title: "Erreur", description: err || "Une erreur est survenue.", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: err.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -140,13 +144,12 @@ const Checkout = () => {
             <div key={i} className="flex items-center gap-2">
               <button
                 onClick={() => i < step && setStep(i)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full font-heading font-bold text-xs uppercase tracking-wider transition-all ${
-                  i === step
+                className={`flex items-center gap-2 px-4 py-2 rounded-full font-heading font-bold text-xs uppercase tracking-wider transition-all ${i === step
                     ? "bg-primary text-primary-foreground"
                     : i < step
-                    ? "bg-primary/20 text-primary cursor-pointer"
-                    : "bg-card text-muted-foreground"
-                }`}
+                      ? "bg-primary/20 text-primary cursor-pointer"
+                      : "bg-card text-muted-foreground"
+                  }`}
               >
                 {i < step ? <Check size={14} /> : <s.icon size={14} />}
                 {s.label}
@@ -213,7 +216,7 @@ const Checkout = () => {
                       type="tel"
                       value={phone}
                       onChange={(e) => {
-                        
+
                         const val = e.target.value.replace(/\D/g, "").slice(0, 8);
                         setPhone(val);
                         setErrors({ ...errors, phone: "" });
@@ -249,9 +252,8 @@ const Checkout = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => { setDeliveryMethod("pickup"); setErrors({}); }}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        deliveryMethod === "pickup" ? "border-primary bg-primary/5" : "border-border bg-card"
-                      }`}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${deliveryMethod === "pickup" ? "border-primary bg-primary/5" : "border-border bg-card"
+                        }`}
                     >
                       <MapPin size={24} className={deliveryMethod === "pickup" ? "text-primary" : "text-muted-foreground"} />
                       <p className="font-heading font-bold text-sm text-foreground mt-2">Retrait en Magasin</p>
@@ -259,9 +261,8 @@ const Checkout = () => {
                     </button>
                     <button
                       onClick={() => { setDeliveryMethod("delivery"); setErrors({}); }}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        deliveryMethod === "delivery" ? "border-primary bg-primary/5" : "border-border bg-card"
-                      }`}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${deliveryMethod === "delivery" ? "border-primary bg-primary/5" : "border-border bg-card"
+                        }`}
                     >
                       <Truck size={24} className={deliveryMethod === "delivery" ? "text-primary" : "text-muted-foreground"} />
                       <p className="font-heading font-bold text-sm text-foreground mt-2">Livraison à Domicile</p>

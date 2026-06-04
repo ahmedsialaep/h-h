@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
   darkMode: ["class"],
@@ -18,6 +19,7 @@ export default {
         body: ['"DM Sans"', 'sans-serif'],
       },
       colors: {
+        /* ── ShadCN semantic tokens ── */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -63,6 +65,30 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        /* ── SneakPeak brand palette (use as bg-sp-orange, text-sp-black, etc.) ── */
+        "sp-black": {
+          DEFAULT: "#0a0a0a",
+          soft: "#111111",
+          light: "#1a1a1a",
+        },
+        "sp-white": {
+          DEFAULT: "#ffffff",
+          soft: "#f4f4f5",
+          muted: "#a3a3a3",
+        },
+        "sp-orange": {
+          DEFAULT: "#ff5c00",
+          bright: "#ff7a2e",
+          dim: "#cc4a00",
+        },
+        "sp-gray": {
+          DEFAULT: "#2d2d2d",
+          light: "#525252",
+        },
+        "sp-success": "#22c55e",
+        "sp-warning": "#eab308",
+        "sp-error": "#ef4444",
+        "sp-info": "#3b82f6",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -85,5 +111,97 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    plugin(function ({ addBase }) {
+      addBase({
+        ":root": {
+          /* ── Light theme ── */
+          "--background": "0 0% 100%",
+          "--foreground": "0 0% 8%",
+
+          "--card": "0 0% 98%",
+          "--card-foreground": "0 0% 8%",
+
+          "--popover": "0 0% 100%",
+          "--popover-foreground": "0 0% 8%",
+
+          "--primary": "22 100% 50%",
+          "--primary-foreground": "0 0% 100%",
+
+          "--secondary": "0 0% 96%",
+          "--secondary-foreground": "0 0% 8%",
+
+          "--muted": "0 0% 94%",
+          "--muted-foreground": "0 0% 40%",
+
+          "--accent": "22 100% 50%",
+          "--accent-foreground": "0 0% 100%",
+
+          "--destructive": "0 84% 55%",
+          "--destructive-foreground": "0 0% 100%",
+
+          "--border": "0 0% 88%",
+          "--input": "0 0% 88%",
+          "--ring": "22 100% 50%",
+
+          "--radius": "0.5rem",
+
+          "--sidebar-background": "0 0% 98%",
+          "--sidebar-foreground": "0 0% 20%",
+          "--sidebar-primary": "22 100% 50%",
+          "--sidebar-primary-foreground": "0 0% 100%",
+          "--sidebar-accent": "0 0% 94%",
+          "--sidebar-accent-foreground": "0 0% 20%",
+          "--sidebar-border": "0 0% 88%",
+          "--sidebar-ring": "22 100% 50%",
+
+          "--surface-elevated": "0 0% 96%",
+          "--text-dim": "0 0% 50%",
+        },
+        ".dark": {
+          /* ── Dark theme ── */
+          "--background": "0 0% 4%",
+          "--foreground": "0 0% 100%",
+
+          "--card": "0 0% 10%",
+          "--card-foreground": "0 0% 100%",
+
+          "--popover": "0 0% 10%",
+          "--popover-foreground": "0 0% 100%",
+
+          "--primary": "22 100% 50%",
+          "--primary-foreground": "0 0% 100%",
+
+          "--secondary": "0 0% 10%",
+          "--secondary-foreground": "0 0% 100%",
+
+          "--muted": "0 0% 15%",
+          "--muted-foreground": "0 0% 53%",
+
+          "--accent": "22 100% 50%",
+          "--accent-foreground": "0 0% 100%",
+
+          "--destructive": "0 84% 60%",
+          "--destructive-foreground": "0 0% 100%",
+
+          "--border": "0 0% 18%",
+          "--input": "0 0% 18%",
+          "--ring": "22 100% 50%",
+
+          "--sidebar-background": "0 0% 6%",
+          "--sidebar-foreground": "0 0% 90%",
+          "--sidebar-primary": "22 100% 50%",
+          "--sidebar-primary-foreground": "0 0% 100%",
+          "--sidebar-accent": "0 0% 12%",
+          "--sidebar-accent-foreground": "0 0% 90%",
+          "--sidebar-border": "0 0% 18%",
+          "--sidebar-ring": "22 100% 50%",
+
+          "--surface-elevated": "0 0% 8%",
+          "--text-dim": "0 0% 40%",
+        },
+      });
+    }),
+  ],
 } satisfies Config;

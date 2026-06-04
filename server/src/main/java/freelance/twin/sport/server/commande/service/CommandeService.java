@@ -15,6 +15,8 @@ import freelance.twin.sport.server.commande.exception.QteInsuffisantException;
 import freelance.twin.sport.server.commande.repository.CommandeRepository;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
+import freelance.twin.sport.server.product.exception.ProductNotFoundException;
+import freelance.twin.sport.server.product.exception.VariantNotFoundException;
 import freelance.twin.sport.server.product.repository.ProductRepository;
 import freelance.twin.sport.server.product.repository.ProductVarsRepository;
 import freelance.twin.sport.server.stockReservation.entity.ReservationType;
@@ -228,6 +230,7 @@ public class CommandeService {
             throw new EmptyCartException("Panier vide");
 
         List<CommandItem> items = cart.getItems().stream().map(cartItem -> {
+
             CommandItem item = new CommandItem();
             item.setCommande(commande);
             item.setProduct(cartItem.getProduct());
@@ -248,10 +251,17 @@ public class CommandeService {
 
         List<CommandItem> items = requestItems.stream().map(req -> {
             Product product = productRepository.findById(req.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Produit introuvable: " + req.getProductId()));
+                    .orElseThrow(() -> new ProductNotFoundException("Produit introuvable: " + req.getProductId()));
             ProductVars variant = varsRepository.findById(req.getVariantId())
-                    .orElseThrow(() -> new RuntimeException("Variante introuvable: " + req.getVariantId()));
+                    .orElseThrow(() -> new VariantNotFoundException("Variante introuvable: " + req.getVariantId()));
 
+            int available = variant.getAvailableQuantity();
+            if (available < req.getQuantity()) {
+                throw new QteInsuffisantException(
+                        "Stock insuffisant pour: " + product.getName() +
+                                " (disponible: " + available + ", demandé: " + req.getQuantity() + ")"
+                );
+            }
             CommandItem item = new CommandItem();
             item.setCommande(commande);
             item.setProduct(product);
