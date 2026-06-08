@@ -22,10 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -57,44 +55,74 @@ public class CartService {
     @Transactional
     public List<CartItemDto> updateCartItems(CartDto cartDto, List<CartItemDto> items, UUID userId) {
 
-        // fetch the real Cart entity with items
         Cart cart = cartRepository.findCartWithItemsByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
+
 
         List<StockReservation> oldReservations = reservationService
                 .getReservationsByUserAndType(userId, ReservationType.CART);
         reservationService.deleteReservations(oldReservations);
 
-        oldReservations.forEach(res -> {
-            productVarsRepository.findById(res.getVariantId()).ifPresent(variant -> {
-                variant.setAvailableQuantity(variant.getAvailableQuantity() + res.getQuantity());
-                productVarsRepository.save(variant);
+        if (!oldReservations.isEmpty()) {
+
+            List<Long> oldVariantIds = oldReservations.stream()
+                    .map(StockReservation::getVariantId).toList();
+
+            Map<Long, ProductVars> oldVariantMap = productVarsRepository.findAllById(oldVariantIds)
+                    .stream()
+                    .collect(Collectors.toMap(ProductVars::getId, v -> v));
+
+            oldReservations.forEach(res -> {
+                ProductVars variant = oldVariantMap.get(res.getVariantId());
+                if (variant != null)
+                    variant.setAvailableQuantity(variant.getAvailableQuantity() + res.getQuantity());
             });
-        });
+
+            productVarsRepository.saveAll(oldVariantMap.values());
+        }
+
 
         cart.getItems().clear();
 
-        List<CartItem> cartItems = items.stream().map(dto -> {
-            Product product = productRepository.findById(dto.getProductId())
-                    .orElseThrow(() -> new ProductNotFoundException("Produit inconnue") {});
+        List<Long> productIds = items.stream().map(CartItemDto::getProductId).toList();
+        List<Long> variantIds = items.stream().map(CartItemDto::getVariantId).toList();
 
-            ProductVars variant = productVarsRepository.findById(dto.getVariantId())
-                    .orElseThrow(() -> new RuntimeException("Variant du Produit inconnue"));
+        Map<Long, Product> productMap = productRepository.findAllById(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        Map<Long, ProductVars> variantMap = productVarsRepository.findAllById(variantIds)
+                .stream()
+                .collect(Collectors.toMap(ProductVars::getId, v -> v));
+
+        List<StockReservation> newReservations = new ArrayList<>();
+
+        List<CartItem> cartItems = items.stream().map(dto -> {
+            Product product = Optional.ofNullable(productMap.get(dto.getProductId()))
+                    .orElseThrow(() -> new ProductNotFoundException("Produit inconnu"));
+
+            ProductVars variant = Optional.ofNullable(variantMap.get(dto.getVariantId()))
+                    .orElseThrow(() -> new RuntimeException("Variant du Produit inconnu"));
 
             int available = variant.getAvailableQuantity();
-            if (dto.getQuantity() > available) {
+            if (dto.getQuantity() > available)
                 throw new QteInsuffisantException("Stock insuffisant pour: " + variant.getSize());
-            }
 
-            reservationService.addReservation(
-                    variant.getId(), userId, dto.getQuantity(), ReservationType.CART
-            );
+            // ✅ Collect reservations — batch save below
+            newReservations.add(reservationService.buildReservation(
+                    variant.getId(), userId, dto.getQuantity(), ReservationType.CART,null
+            ));
 
             variant.setAvailableQuantity(available - dto.getQuantity());
-            productVarsRepository.save(variant);
 
             return CartMapper.toEntity(dto, cart, product, variant);
         }).toList();
+
+        // ✅ ONE saveAll for variants instead of N save
+        productVarsRepository.saveAll(variantMap.values());
+
+        // ✅ ONE saveAll for reservations instead of N save
+        reservationService.saveAll(newReservations);
 
         cart.getItems().addAll(cartItems);
         cart.setUpdatedAt(LocalDateTime.now());

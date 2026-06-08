@@ -4,11 +4,13 @@ import freelance.twin.sport.server.stockReservation.entity.ReservationType;
 import freelance.twin.sport.server.stockReservation.entity.StockReservation;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,4 +31,14 @@ public interface StockReservationRepository extends JpaRepository<StockReservati
     void deleteByVariantIdAndTypeAndUserId(Long variantId, ReservationType type, UUID userId);
     @Query("SELECT r FROM StockReservation r WHERE r.expiresAt < :now AND r.type = 'CART'")
     List<StockReservation> findExpiredCartReservations(LocalDateTime now, Pageable pageable);
+
+    List<StockReservation> findByCommandeIdAndType(Long commandeId, ReservationType type);
+
+    @Modifying
+    void deleteByCommandeIdAndVariantIdAndType(Long commandeId, Long variantId, ReservationType type);
+
+    @Modifying
+    void deleteAllByUserIdAndVariantIdAndType(UUID userId, Long variantId, ReservationType type);
+
+    void deleteAllByUserIdAndType(UUID userId, ReservationType type);
 }

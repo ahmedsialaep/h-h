@@ -36,8 +36,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -108,16 +110,19 @@ public class CommandeService {
         Status currentStatus = commande.getStatus();
         UUID userId = commande.getUser() != null ? commande.getUser().getId() : null;
 
+        Map<Long, StockReservation> reservationMap = reservationService.
+                getReservationMapByOrder(commandeId,ReservationType.ORDER);
+
         switch (status) {
 
             case CONFIRMEE -> {
                 commande.getItems().forEach(item -> {
                     ProductVars variant = item.getVariant();
 
-                    Optional<StockReservation> orderReservation = reservationService
-                            .getReservationsByUserAndTypeAndVariant(userId, ReservationType.ORDER, variant.getId());
 
-                    if (orderReservation.isPresent()) {
+                    StockReservation orderReservation = reservationMap.get(variant.getId());
+
+                    if (orderReservation != null) {
                         // ✅ reservation exists → stock was already handled at checkout, skip everything
                         return;
                     }
@@ -132,7 +137,7 @@ public class CommandeService {
                     }
                     variant.setAvailableQuantity(variant.getAvailableQuantity() - item.getQuantity());
                     varsRepository.save(variant);
-                    reservationService.confirmOrderReservation(variant.getId(), userId, item.getQuantity());
+                    reservationService.confirmOrderReservation(variant.getId(), userId, commandeId,item.getQuantity());
                 });
             }
 
@@ -145,7 +150,7 @@ public class CommandeService {
                     varsRepository.save(variant);
 
                     // ← delete ORDER reservation
-                    reservationService.deleteOrderReservation(variant.getId(), userId);
+                    reservationService.deleteOrderReservation(variant.getId(), commandeId);
                 });
             }
 
@@ -156,7 +161,7 @@ public class CommandeService {
 
                         variant.setAvailableQuantity(variant.getAvailableQuantity() + item.getQuantity());
                         varsRepository.save(variant);
-                        reservationService.deleteOrderReservation(variant.getId(), userId);
+                        reservationService.deleteOrderReservation(variant.getId(), commandeId);
                     });
                 } else if (currentStatus == Status.LIVREE || currentStatus == Status.PRETE_RETRAIT) {
                     // stock was already decremented → restore both
@@ -212,15 +217,20 @@ public class CommandeService {
 
         // now handle reservations — items are loaded
         if (userId != null) {
-            saved.getItems().forEach(item -> {
-                Long variantId = item.getVariant().getId();
-                reservationService.deleteCartReservation(variantId, userId);
-                StockReservation res = reservationService.addReservation(
-                        variantId, userId, item.getQuantity(), ReservationType.ORDER
-                );
-                System.out.println("ORDER reservation created: variantId=" + variantId
-                        + " userId=" + userId + " reservationId=" + res.getId());
-            });
+            reservationService.deleteAllCartReservations(userId);
+
+            // ✅ Build all in memory, then ONE saveAll instead of N inserts
+            List<StockReservation> orderReservations = saved.getItems().stream()
+                    .map(item -> reservationService.buildReservation(
+                            item.getVariant().getId(),
+                            userId,
+                            item.getQuantity(),
+                            ReservationType.ORDER,
+                            saved.getId()
+                    ))
+                    .toList();
+
+            reservationService.saveAll(orderReservations);
         }
 
         return saved;
@@ -229,13 +239,28 @@ public class CommandeService {
         if (cart.getItems().isEmpty())
             throw new EmptyCartException("Panier vide");
 
+        UUID userId = commande.getUser().getId();
+        Map<Long, StockReservation> reservationMap = reservationService
+                .getReservationsByUserAndType(userId, ReservationType.CART)
+                .stream()
+                .collect(Collectors.toMap(StockReservation::getVariantId, r -> r));
+
         List<CommandItem> items = cart.getItems().stream().map(cartItem -> {
-            int available = cartItem.getVariant().getAvailableQuantity();
-            if (available < cartItem.getQuantity()) {
-                throw new QteInsuffisantException(
-                        "Stock insuffisant pour: " + cartItem.getProduct().getName() +
-                                " (disponible: " + available + ", demandé: " + cartItem.getQuantity() + ")"
-                );
+            Long variantId = cartItem.getVariant().getId();
+            int requested = cartItem.getQuantity();
+
+            StockReservation reservation = reservationMap.get(variantId);
+            if (reservation == null || reservation.getQuantity() < requested) {
+
+                int available = cartItem.getVariant().getAvailableQuantity();
+                if (available < requested) {
+                    throw new QteInsuffisantException(
+                            "Stock insuffisant pour: " + cartItem.getProduct().getName() +
+                                    " (disponible: " + available + ", demandé: " + requested + ")"
+                    );
+                }
+                cartItem.getVariant().setAvailableQuantity(available - requested);
+                varsRepository.save(cartItem.getVariant());
             }
             CommandItem item = new CommandItem();
             item.setCommande(commande);

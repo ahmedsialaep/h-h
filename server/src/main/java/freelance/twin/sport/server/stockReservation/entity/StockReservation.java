@@ -30,6 +30,8 @@ public class StockReservation {
 
     private Long variantId;
 
+    private Long commandeId;
+
     private UUID userId;
 
     private int quantity;
