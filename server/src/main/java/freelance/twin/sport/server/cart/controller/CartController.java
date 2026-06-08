@@ -1,5 +1,6 @@
 package freelance.twin.sport.server.cart.controller;
 
+import freelance.twin.sport.server.cart.dto.CartDto;
 import freelance.twin.sport.server.cart.dto.CartItemDto;
 import freelance.twin.sport.server.cart.entity.Cart;
 import freelance.twin.sport.server.cart.entity.CartItem;
@@ -31,9 +32,9 @@ public class CartController {
         try {
 
             User user = userService.getCurrentUser();
-            Cart cart = cartService.getOrCreateCart(user);
+            CartDto cart = cartService.getOrCreateCart(user);
 
-            return ResponseEntity.ok(CartMapper.toDTO(cart));
+            return ResponseEntity.ok(cart);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
@@ -46,7 +47,7 @@ public class CartController {
 
 
             User user = userService.getCurrentUser();
-            Cart cart = cartService.getOrCreateCart(user);
+            CartDto cart = cartService.getOrCreateCart(user);
 
             List<CartItemDto> updated = cartService.updateCartItems(cart, items, user.getId());
             return ResponseEntity.ok(updated);

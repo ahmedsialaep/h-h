@@ -1,5 +1,6 @@
 package freelance.twin.sport.server.cart.service;
 
+import freelance.twin.sport.server.cart.dto.CartDto;
 import freelance.twin.sport.server.cart.dto.CartItemDto;
 import freelance.twin.sport.server.cart.entity.Cart;
 import freelance.twin.sport.server.cart.entity.CartItem;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,28 +35,35 @@ public class CartService {
     private final ProductVarsRepository productVarsRepository;
     private final StockReservationService reservationService;
 
-    public Cart getOrCreateCart(User user) {
-        Optional<Cart> existingCart = cartRepository.findCartByUser_Id(user.getId());
+    @Transactional
+    public CartDto getOrCreateCart(User user) {
+        Optional<Cart> existingCart = cartRepository.findCartWithItemsByUserId(user.getId());
 
+        Cart cart;
         if (existingCart.isPresent()) {
-            return existingCart.get();
+            cart = existingCart.get();
         } else {
             Cart newCart = new Cart();
             newCart.setUser(user);
+            newCart.setItems(new ArrayList<>());
             newCart.setCreatedAt(LocalDateTime.now());
             newCart.setUpdatedAt(LocalDateTime.now());
-            return cartRepository.save(newCart);
+            cart = cartRepository.save(newCart);
         }
+
+        return CartMapper.toDTO(cart);
     }
 
     @Transactional
-    public List<CartItemDto> updateCartItems(Cart cart, List<CartItemDto> items, UUID userId) {
+    public List<CartItemDto> updateCartItems(CartDto cartDto, List<CartItemDto> items, UUID userId) {
 
+        // fetch the real Cart entity with items
+        Cart cart = cartRepository.findCartWithItemsByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
 
         List<StockReservation> oldReservations = reservationService
                 .getReservationsByUserAndType(userId, ReservationType.CART);
         reservationService.deleteReservations(oldReservations);
-
 
         oldReservations.forEach(res -> {
             productVarsRepository.findById(res.getVariantId()).ifPresent(variant -> {
@@ -67,24 +76,20 @@ public class CartService {
 
         List<CartItem> cartItems = items.stream().map(dto -> {
             Product product = productRepository.findById(dto.getProductId())
-                    .orElseThrow(() -> new ProductNotFoundException("Produit inconnue") {
-                    });
+                    .orElseThrow(() -> new ProductNotFoundException("Produit inconnue") {});
 
             ProductVars variant = productVarsRepository.findById(dto.getVariantId())
                     .orElseThrow(() -> new RuntimeException("Variant du Produit inconnue"));
-
 
             int available = variant.getAvailableQuantity();
             if (dto.getQuantity() > available) {
                 throw new QteInsuffisantException("Stock insuffisant pour: " + variant.getSize());
             }
 
-            // ← create new reservation
             reservationService.addReservation(
                     variant.getId(), userId, dto.getQuantity(), ReservationType.CART
             );
 
-            // ← decrement availableQuantity
             variant.setAvailableQuantity(available - dto.getQuantity());
             productVarsRepository.save(variant);
 
