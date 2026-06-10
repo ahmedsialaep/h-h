@@ -41,4 +41,8 @@ public interface StockReservationRepository extends JpaRepository<StockReservati
     void deleteAllByUserIdAndVariantIdAndType(UUID userId, Long variantId, ReservationType type);
 
     void deleteAllByUserIdAndType(UUID userId, ReservationType type);
+
+    @Modifying
+    @Query("DELETE FROM StockReservation r WHERE r.commandeId = :commandeId AND r.type = :type")
+    void deleteAllByCommandeId(@Param("commandeId") Long commandeId, @Param("type") ReservationType type);
 }

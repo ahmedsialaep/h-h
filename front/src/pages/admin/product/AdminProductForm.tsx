@@ -46,6 +46,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
     gender: initialData?.gender || Genre.MALE,
     price: initialData?.price || 0,
     originalPrice: initialData?.originalPrice || 0,
+    buyPrice: initialData?.buyPrice || 0,
     description: initialData?.description || "",
     newArrival: initialData?.newArrival || false,
     marketVisible: initialData?.marketVisible || false,
@@ -86,6 +87,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
         price: initialData.price || 0,
         image: initialData.image || undefined,
         originalPrice: initialData.originalPrice || 0,
+        buyPrice: initialData.buyPrice || 0,
         description: initialData.description || "",
         newArrival: initialData.newArrival || false,
         marketVisible: initialData.marketVisible || false,
@@ -114,6 +116,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
     if (!form.typeId) validationErrors.push("Le Type est obligatoire");
     if (!form.ref.trim()) validationErrors.push("La référence est obligatoire");
     if (form.price <= 0) validationErrors.push("Le prix doit être supérieur à 0");
+    if (form.buyPrice <= 0) validationErrors.push("Le prix d'achat doit être supérieur à 0");
     if (validationErrors.length > 0) { setErrors(validationErrors); return; }
     setErrors([]);
 
@@ -329,7 +332,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
                 onChange={(val) => setForm({ ...form, gender: val as Genre })}
               />
             </div>
-
+              <div>
+                  <label className="block text-xs font-heading uppercase tracking-wider text-muted-foreground mb-1">Prix d'achat (TND)</label>
+                <input type="number" value={form.buyPrice}
+                  onChange={(e) => setForm({ ...form, buyPrice: Number(e.target.value) })}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground" />
+              
+              </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-heading uppercase tracking-wider text-muted-foreground mb-1">Prix (TND)</label>
@@ -338,7 +347,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData, onCancel }) => {
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground" />
               </div>
               <div>
-                <label className="block text-xs font-heading uppercase tracking-wider text-muted-foreground mb-1">Ancien Prix</label>
+                <label className="block text-xs font-heading uppercase tracking-wider text-muted-foreground mb-1">Prix Promo</label>
                 <input type="number" value={form.originalPrice}
                   onChange={(e) => setForm({ ...form, originalPrice: Number(e.target.value) })}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground" />

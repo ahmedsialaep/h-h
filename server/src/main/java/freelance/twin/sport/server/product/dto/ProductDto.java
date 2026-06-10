@@ -18,6 +18,7 @@ public class ProductDto {
     private Categorie categorie;
     private double price;
     private Double originalPrice;
+    private Double buyPrice;
     private String image;
     private Long brandId;
     private String brandName;

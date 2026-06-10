@@ -133,7 +133,7 @@ public class EmailOrderStatusService implements OrderStatusMessageService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setTo(recipientEmail);
-            helper.setSubject("Mise à jour de votre commande " + commande.getRef() + " — SneakPeak");
+            helper.setSubject("Mise à jour de votre commande " + commande.getRef() + " — Hassen & Houssine");
             helper.setText(body, true);
             mailSender.send(mimeMessage);
             return true;

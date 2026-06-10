@@ -46,7 +46,7 @@ public class Email2FaVerificationService implements ITowFaMessageService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setTo(user.getUsername());
-            helper.setSubject("Vérification 2FA — SneakPeak");
+            helper.setSubject("Vérification 2FA — H&H");
             helper.setText(body, true);
             mailSender.send(mimeMessage);
             return true;

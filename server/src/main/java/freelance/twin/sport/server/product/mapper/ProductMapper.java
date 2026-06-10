@@ -22,6 +22,7 @@ public class ProductMapper {
         dto.setGender(product.getGender());
         dto.setCategorie(product.getCategorie());
         dto.setPrice(product.getPrice());
+        dto.setBuyPrice(product.getBuyPrice());
         dto.setOriginalPrice(product.getOriginalPrice());
         dto.setImage(product.getImage());
         dto.setCreatedAt(product.getCreatedAt());
@@ -51,6 +52,7 @@ public class ProductMapper {
         dto.setCategorie(product.getCategorie());
         dto.setPrice(product.getPrice());
         dto.setOriginalPrice(product.getOriginalPrice());
+        dto.setBuyPrice(product.getBuyPrice());
         dto.setImage(product.getImage());
         dto.setCreatedAt(product.getCreatedAt());
         dto.setBrandId(product.getBrand().getId());
@@ -80,6 +82,7 @@ public class ProductMapper {
         dto.setCategorie(product.getCategorie());
         dto.setPrice(product.getPrice());
         dto.setOriginalPrice(product.getOriginalPrice());
+        dto.setBuyPrice(product.getBuyPrice());
         dto.setImage(product.getImage());
         dto.setCreatedAt(product.getCreatedAt());
         dto.setBrandId(product.getBrand().getId());

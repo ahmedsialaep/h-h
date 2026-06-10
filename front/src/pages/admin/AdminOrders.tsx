@@ -13,6 +13,7 @@ const AdminOrders = () => {
   const { items: orders, currentPage, totalPages, filters } = useAppSelector(state => state.commande);
   const [selectedStatuses, setSelectedStatuses] = useState<Status[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const { toast } = useToast()
   const handleStatusChange = async (id: number, status: Status) => {
     try {
@@ -29,7 +30,14 @@ const AdminOrders = () => {
   const handlePageChange = (page: number) => {
     dispatch(setPage(page));
   };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      dispatch(setFilters({ search: search.trim() || null, page: 0 }));
+    }, 400);
 
+    return () => clearTimeout(timer);
+  }, [search]);
   useEffect(() => {
 
     dispatch(fetchCommandes(filters));
@@ -38,8 +46,6 @@ const AdminOrders = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearch(val);
-
-    dispatch(setFilters({ search: val.trim() || null, page: 0 }));
   };
   const isStatusEnabled = (current: Status, target: Status) => {
     return allowedStatusTransitions[current]?.includes(target);

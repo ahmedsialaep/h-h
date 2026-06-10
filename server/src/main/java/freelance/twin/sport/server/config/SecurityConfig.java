@@ -51,6 +51,8 @@ public class SecurityConfig {
     @Value("${app.security.cookiePath}")
     private String cookiePath;
 
+    @Autowired
+    private SecurityHeaderConfig securityHeadersConfigurer;
 
 
     @Bean
@@ -65,6 +67,7 @@ public class SecurityConfig {
     }
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+        securityHeadersConfigurer.configure(http);
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())

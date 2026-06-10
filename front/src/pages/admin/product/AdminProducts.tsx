@@ -206,6 +206,7 @@ const AdminProducts = () => {
                   <th className="text-left p-4 font-heading text-xs uppercase tracking-wider text-muted-foreground hidden md:table-cell">Genre</th>
                   <th className="text-left p-4 font-heading text-xs uppercase tracking-wider text-muted-foreground hidden md:table-cell">Catégorie</th>
                   <th className="text-left p-4 font-heading text-xs uppercase tracking-wider text-muted-foreground">Prix</th>
+                  <th className="text-left p-4 font-heading text-xs uppercase tracking-wider text-muted-foreground">Prix d'achat</th>
                   <th className="text-left p-4 font-heading text-xs uppercase tracking-wider text-muted-foreground hidden md:table-cell">Stock</th>
                   <th className="text-left p-4 font-heading text-xs uppercase tracking-wider text-muted-foreground hidden md:table-cell">Qte valable</th>
                   <th className="text-left p-4 font-heading text-xs uppercase tracking-wider text-muted-foreground hidden md:table-cell">Visible</th>
@@ -238,6 +239,7 @@ const AdminProducts = () => {
                     </td>
                     <td className="p-4 hidden md:table-cell text-muted-foreground">{product.categorie}</td>
                     <td className="p-4 font-heading font-bold text-foreground">{product.price} TND</td>
+                    <td className="p-4 font-heading font-bold text-foreground">{product.buyPrice} TND</td>
                     <td className="p-4 hidden md:table-cell">
                       <span
                         className={`font-heading font-bold text-sm ${product.totalStock <= 5

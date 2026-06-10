@@ -133,6 +133,7 @@ public class ProductService {
             existing.setCategorie(product.getCategorie());
             existing.setPrice(product.getPrice());
             existing.setOriginalPrice(product.getOriginalPrice());
+            existing.setBuyPrice(product.getBuyPrice());
             existing.setDescription(product.getDescription());
             existing.setNewArrival(product.isNewArrival());
             existing.setMarketVisible(product.isMarketVisible());

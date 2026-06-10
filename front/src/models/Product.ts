@@ -10,6 +10,7 @@ export interface ProductDTO {
   categorie: Categorie;
   price: number;
   originalPrice?: number;
+  buyPrice?: number;
   image?: string;
   createdAt: Date;
   brandId: number;
@@ -46,7 +47,7 @@ export interface Product {
   createdAt: Date;
   price: number;
   originalPrice?: number;
-
+  buyPrice?: number;
   image?: string;
 
   brand: Brand;

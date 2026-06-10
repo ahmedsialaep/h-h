@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -81,18 +82,28 @@ public class StockCleanupService {
                 .filter(r -> r.getUserId() != null)
                 .collect(Collectors.groupingBy(StockReservation::getUserId));
 
+        Map<UUID, Cart> cartByUserId = cartRepository.findCartsByUser_IdIn(byUser.keySet())
+                .stream()
+                .collect(Collectors.toMap(cart -> cart.getUser().getId(), c -> c));
+
+        List<Cart> updatedCarts = new ArrayList<>();
+
         byUser.forEach((userId, reservations) -> {
-            cartRepository.findByUserId(userId).ifPresent(cart -> {
-                List<Long> expiredVariantIds = reservations.stream()
-                        .map(StockReservation::getVariantId)
-                        .toList();
+            Cart cart = cartByUserId.get(userId);
+            if (cart == null) return;
 
+            List<Long> expiredVariantIds = reservations.stream()
+                    .map(StockReservation::getVariantId)
+                    .toList();
 
-                cartItemRepository.deleteByCartIdAndVariantIds(cart.getId(), expiredVariantIds);
+            cartItemRepository.deleteByCartIdAndVariantIds(cart.getId(), expiredVariantIds);
 
-                cart.setUpdatedAt(LocalDateTime.now());
-                cartRepository.save(cart);
-            });
+            cart.setUpdatedAt(LocalDateTime.now());
+            updatedCarts.add(cart);
         });
+
+        if (!updatedCarts.isEmpty()) {
+            cartRepository.saveAll(updatedCarts);
+        }
     }
 }

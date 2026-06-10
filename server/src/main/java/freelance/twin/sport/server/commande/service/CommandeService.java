@@ -35,10 +35,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -142,38 +139,49 @@ public class CommandeService {
             }
 
             case LIVREE, PRETE_RETRAIT -> {
-                commande.getItems().forEach(item -> {
-                    ProductVars variant = item.getVariant();
+                List<ProductVars> variants = commande.getItems().stream()
+                        .map(item -> {
+                            ProductVars variant = item.getVariant();
+                            variant.setStock(variant.getStock() - item.getQuantity());
+                            variant.setSoldQuantity(variant.getSoldQuantity() + item.getQuantity());
+                            return variant;
+                        })
+                        .toList();
 
-                    variant.setStock(variant.getStock() - item.getQuantity());
-                    variant.setSoldQuantity(variant.getSoldQuantity() + item.getQuantity());
-                    varsRepository.save(variant);
-
-                    // ← delete ORDER reservation
-                    reservationService.deleteOrderReservation(variant.getId(), commandeId);
-                });
+                varsRepository.saveAll(variants);
+                reservationService.deleteOrderReservationByCommandeId(commandeId);
             }
 
             case ANNULEE -> {
-                if ( currentStatus == Status.EN_ATTENTE ||currentStatus == Status.CONFIRMEE || currentStatus == Status.EXPEDIEE) {
-                    commande.getItems().forEach(item -> {
-                        ProductVars variant = item.getVariant();
+                if (currentStatus == Status.EN_ATTENTE
+                        || currentStatus == Status.CONFIRMEE
+                        || currentStatus == Status.EXPEDIEE) {
 
-                        variant.setAvailableQuantity(variant.getAvailableQuantity() + item.getQuantity());
-                        varsRepository.save(variant);
-                        reservationService.deleteOrderReservation(variant.getId(), commandeId);
-                    });
+                    List<ProductVars> variants = commande.getItems().stream()
+                            .map(item -> {
+                                ProductVars variant = item.getVariant();
+                                variant.setAvailableQuantity(variant.getAvailableQuantity() + item.getQuantity());
+                                return variant;
+                            })
+                            .toList();
+
+                    varsRepository.saveAll(variants);
+                    reservationService.deleteOrderReservationByCommandeId(commandeId);
+
                 } else if (currentStatus == Status.LIVREE || currentStatus == Status.PRETE_RETRAIT) {
-                    // stock was already decremented → restore both
-                    commande.getItems().forEach(item -> {
-                        ProductVars variant = item.getVariant();
-                        variant.setAvailableQuantity(variant.getAvailableQuantity() + item.getQuantity());
-                        variant.setStock(variant.getStock() + item.getQuantity());
-                        variant.setSoldQuantity(variant.getSoldQuantity() - item.getQuantity());
-                        varsRepository.save(variant);
-                    });
-                }
 
+                    List<ProductVars> variants = commande.getItems().stream()
+                            .map(item -> {
+                                ProductVars variant = item.getVariant();
+                                variant.setAvailableQuantity(variant.getAvailableQuantity() + item.getQuantity());
+                                variant.setStock(variant.getStock() + item.getQuantity());
+                                variant.setSoldQuantity(variant.getSoldQuantity() - item.getQuantity());
+                                return variant;
+                            })
+                            .toList();
+
+                    varsRepository.saveAll(variants);
+                }
             }
 
             default -> {}
@@ -240,6 +248,7 @@ public class CommandeService {
             throw new EmptyCartException("Panier vide");
 
         UUID userId = commande.getUser().getId();
+        List<ProductVars> modifiedVariants = new ArrayList<>();
         Map<Long, StockReservation> reservationMap = reservationService
                 .getReservationsByUserAndType(userId, ReservationType.CART)
                 .stream()
@@ -260,7 +269,7 @@ public class CommandeService {
                     );
                 }
                 cartItem.getVariant().setAvailableQuantity(available - requested);
-                varsRepository.save(cartItem.getVariant());
+                modifiedVariants.add(cartItem.getVariant());
             }
             CommandItem item = new CommandItem();
             item.setCommande(commande);
@@ -270,6 +279,10 @@ public class CommandeService {
             item.setUnitPrice(cartItem.getProduct().getPrice());
             return item;
         }).toList();
+
+        if (!modifiedVariants.isEmpty()) {
+            varsRepository.saveAll(modifiedVariants);
+        }
 
         finalizeCommande(commande, items);
 

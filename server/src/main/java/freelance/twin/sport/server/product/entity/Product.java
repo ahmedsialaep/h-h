@@ -37,6 +37,8 @@ public class Product {
 
     private Double originalPrice;
 
+    private Double buyPrice;
+
     private LocalDateTime createdAt;
 
     private String image;

@@ -65,20 +65,7 @@ public class StockReservationService {
                 .stream()
                 .collect(Collectors.toMap(StockReservation::getVariantId, r -> r));
     }
-    @Transactional
-    public void deleteReservation(Long reservationId) {
 
-        StockReservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
-
-        reservationRepository.delete(reservation);
-    }
-    @Transactional
-    public void deleteCartReservation(Long variantId, UUID userId) {
-        reservationRepository.deleteByVariantIdAndTypeAndUserId(
-                variantId, ReservationType.CART, userId
-        );
-    }
     public void deleteAllCartReservations(UUID userId) {
         reservationRepository.deleteAllByUserIdAndType(userId, ReservationType.CART);
     }
@@ -109,17 +96,15 @@ public class StockReservationService {
             reservationRepository.save(res);
         } else {
 
-            StockReservation reservation = addReservation(variantId, userId, quantity, ReservationType.ORDER, commandeId);
+            StockReservation reservation = buildReservation(variantId, userId, quantity, ReservationType.ORDER, commandeId);
             reservation.setExpiresAt(null);
             reservationRepository.save(reservation);
         }
     }
 
     @Transactional
-    public void deleteOrderReservation(Long variantId, Long commandeId) {
-        reservationRepository.deleteByCommandeIdAndVariantIdAndType(
-                commandeId,variantId, ReservationType.ORDER
-        );
+    public void deleteOrderReservationByCommandeId(Long commandeId) {
+        reservationRepository.deleteAllByCommandeId(commandeId, ReservationType.ORDER);
     }
 
     public void saveAll(List<StockReservation> reservations) {
