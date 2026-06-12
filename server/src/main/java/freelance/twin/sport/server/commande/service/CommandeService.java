@@ -100,7 +100,7 @@ public class CommandeService {
     }
 
     @Transactional
-    public Commande updateStatus(Long commandeId, Status status) {
+    public Commande updateStatus(Long commandeId, Status status, String commentaire) {
         Commande commande = commandeRepository.findById(commandeId)
                 .orElseThrow(() -> new EntityNotFoundException("Commande not found"));
 
@@ -186,7 +186,9 @@ public class CommandeService {
 
             default -> {}
         }
-
+        if (commentaire != null && !commentaire.isEmpty()) {
+            commande.setCommentaire(commentaire);
+        }
         commande.setStatus(status);
         commande.setUpdatedAt(LocalDateTime.now());
         if(status != null) {

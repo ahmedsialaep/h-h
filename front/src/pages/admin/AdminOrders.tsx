@@ -14,10 +14,34 @@ const AdminOrders = () => {
   const [selectedStatuses, setSelectedStatuses] = useState<Status[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pendingChange, setPendingChange] = useState<{ orderId: number; status: Status } | null>(null);
+  const [commentaire, setCommentaire] = useState("");
   const { toast } = useToast()
-  const handleStatusChange = async (id: number, status: Status) => {
+  const handleStatusChange = (id: number, status: Status) => {
+  if (status !== Status.ANNULEE) {
+    dispatch(updateCommandeStatus({ id, status })).unwrap().catch((err: any) => {
+      toast({
+        title: err?.errorCode ?? "Error",
+        description: err?.message ?? "une erreur est survenue",
+        variant: "destructive",
+      });
+    });
+    return;
+  }
+  setPendingChange({ orderId: id, status });
+  setCommentaire("");
+};
+
+  const confirmStatusChange = async () => {
+    if (!pendingChange) return;
     try {
-      await dispatch(updateCommandeStatus({ id, status })).unwrap();
+      await dispatch(updateCommandeStatus({
+        id: pendingChange.orderId,
+        status: pendingChange.status,
+        commentaire: commentaire.trim() || undefined,
+      })).unwrap();
+      setPendingChange(null);
+      setCommentaire("");
     } catch (err: any) {
       toast({
         title: err?.errorCode ?? "Error",
@@ -166,6 +190,32 @@ const AdminOrders = () => {
                 onChange={(val) => handleStatusChange(order.id, val as Status)}
                 className="w-48"
               />
+              {/* Commentaire input — only shown for this order */}
+              {pendingChange?.orderId === order.id && pendingChange.status === Status.ANNULEE && (
+                <div className="flex items-center gap-2 w-full mt-3">
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="Commentaire (optionnel)..."
+                    value={commentaire}
+                    onChange={(e) => setCommentaire(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && confirmStatusChange()}
+                    className="flex-1 min-w-0 bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                  />
+                  <button
+                    onClick={confirmStatusChange}
+                    className="shrink-0 px-3 py-2.5 rounded-lg bg-primary text-primary-foreground text-xs font-heading uppercase tracking-wider hover:bg-primary/90 transition-colors"
+                  >
+                    Confirmer
+                  </button>
+                  <button
+                    onClick={() => setPendingChange(null)}
+                    className="shrink-0 p-2.5 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Items */}

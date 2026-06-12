@@ -53,6 +53,7 @@ public class Commande {
     private double deliveryFee;
 
     private String notes;
+    private String commentaire;
 
     private String guestFirstName;
     private String guestLastName;

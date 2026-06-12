@@ -27,7 +27,7 @@ public class CommandeMapper {
         dto.setGuestLastName(c.getGuestLastName());
         dto.setGuestEmail(c.getGuestEmail());
         dto.setGuestPhone(c.getGuestPhone());
-
+        dto.setCommentaire(c.getCommentaire());
         if (c.getUser() != null) {
             dto.setUserId(c.getUser().getId());
             dto.setUsername(c.getUser().getUsername());

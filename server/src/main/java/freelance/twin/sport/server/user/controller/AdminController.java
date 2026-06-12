@@ -185,9 +185,10 @@ public class AdminController {
     @PutMapping("/commande/{id}/status")
     public ResponseEntity<?> updateStatut(
             @PathVariable Long id,
-            @RequestParam Status status
+            @RequestParam Status status,
+            @RequestParam(required = false) String commentaire
     ) {
-        Commande commande= commandeService.updateStatus(id, status);
+        Commande commande= commandeService.updateStatus(id, status,commentaire);
 
         return ResponseEntity.ok(CommandeMapper.toDTO(commande));
     }

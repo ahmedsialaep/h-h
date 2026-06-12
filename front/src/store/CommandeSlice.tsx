@@ -104,12 +104,12 @@ export const fetchOrderByRef = createAsyncThunk<
 
 export const updateCommandeStatus = createAsyncThunk<
   CommandeDto,
-  { id: number; status: string },
+  { id: number; status: string; commentaire?: string },
   { rejectValue: string }
->("commandes/updateStatus", async ({ id, status }, { rejectWithValue }) => {
+>("commandes/updateStatus", async ({ id, status, commentaire }, { rejectWithValue }) => {
   try {
     const response = await adminApi.put(`/commande/${id}/status`, null, {
-      params: { status },
+      params: { status, ...(commentaire ? { commentaire } : {}) },
     });
     return response.data;
   } catch (error: any) {

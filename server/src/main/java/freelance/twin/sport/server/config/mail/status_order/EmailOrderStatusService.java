@@ -120,6 +120,7 @@ public class EmailOrderStatusService implements OrderStatusMessageService {
         context.setVariable("items",            commande.getItems());
         context.setVariable("total",            commande.getTotalPrice());
         context.setVariable("deliveryFee",      commande.getDeliveryFee());
+        context.setVariable("commentaire",        commande.getCommentaire());
         context.setVariable("orderDate",        commande.getCreatedAt() != null
                 ? commande.getCreatedAt().format(FORMATTER) : "-");
         context.setVariable("city",             commande.getCity());

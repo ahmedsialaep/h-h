@@ -18,6 +18,7 @@ public class CommandeDto {
     private String ref;
     private DeliveryMethod deliveryMethod;
     private String notes;
+    private String commentaire;
     private LocalDateTime createdAt;
     private Status status;
     private LocalDateTime updatedAt;

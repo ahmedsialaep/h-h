@@ -37,7 +37,8 @@ export interface Commande {
   totalPrice: number;
   deliveryFee: number;
   notes?: string;
-
+  commentaire: string;
+  
   guestFirstName?: string;
   guestLastName?: string;
   guestEmail?: string;
@@ -59,6 +60,7 @@ export interface CommandeDto {
   ref: string;
   deliveryMethod: DeliveryMethod;
   notes: string;
+  commentaire: string;
   createdAt: string;
   status: Status;
   updatedAt: string;

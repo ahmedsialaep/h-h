@@ -49,6 +49,9 @@
                                        th:text="${statusLabel}">Statut</p>
                                     <p style="color:#666;font-size:13px;margin:6px 0 0;line-height:1.5;"
                                        th:text="${statusMessage}">Message de statut.</p>
+                                    <p th:if="${commentaire != null and !#strings.isEmpty(commentaire)}"
+                                       style="color:#444;font-size:13px;margin:10px 0 0;font-style:italic;line-height:1.5;"
+                                       th:text="'&quot;' + ${commentaire} + '&quot;'">Commentaire.</p>
                                 </td>
                             </tr>
                         </table>
