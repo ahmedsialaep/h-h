@@ -7,26 +7,31 @@ import { Magasin } from "@/models/Magasin";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMagasin } from "@/store/MagasinSlice";
 import Loading from "@/components/Loading";
+import { lat, longt } from "../models/constants/LocalisationConstant";
 
-const STORE_LAT = 36.819;
-const STORE_LNG = 10.1658;
 
 const About = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
   const { magasin, status } = useAppSelector((state) => state.magasin);
-  const { toast } = useToast();
+
+
+  const STORE_LAT = magasin?.store_lat ? Number(magasin.store_lat) : lat;
+  const STORE_LNG = magasin?.store_lng ? Number(magasin.store_lng) : longt;
 
   useEffect(() => {
     dispatch(fetchMagasin());
+
   }, [dispatch]);
 
 
   useEffect(() => {
     if (!mapRef.current) return;
-    const map = L.map(mapRef.current, { scrollWheelZoom: false }).setView([STORE_LAT, STORE_LNG], 15);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap",
+    const map = L.map(mapRef.current, { scrollWheelZoom: false }).setView([STORE_LAT, STORE_LNG], 16);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 20,
     }).addTo(map);
 
     const icon = L.divIcon({
@@ -42,11 +47,11 @@ const About = () => {
       .openPopup();
 
     return () => { map.remove(); };
-  }, []);
+  }, [status, STORE_LAT, STORE_LNG]);
 
   if (status === "loading") {
-        return <Loading/>;
-    }
+    return <Loading />;
+  }
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-16">

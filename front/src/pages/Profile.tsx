@@ -6,10 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAppSelector } from "@/store/hook";
+import PageSkeleton from "../components/PageSkeleton";
 
 const Profile = () => {
     const { toast } = useToast();
-    const user = useAppSelector((state) => state.auth.user); 
+    const [errors, setErrors] = useState<{ email?: string; phone?: string }>({});
+
+    const {user ,loading, restoringSession} = useAppSelector((state) => state.auth);
 
     const [form, setForm] = useState({
         nom: user?.nom ?? "",
@@ -21,14 +24,21 @@ const Profile = () => {
         zip: "",
     });
 
-    const handleSave = () => {
-        // TODO: call your backend API to save profile
-        toast({
-            title: "Profil mis à jour",
-            description: "Vos informations ont été sauvegardées."
-        });
+    const validate = () => {
+        const newErrors: typeof errors = {};
+        if (!form.email.trim()) newErrors.email = "L'email est obligatoire.";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = "Email invalide.";
+        if (!form.phone.trim()) newErrors.phone = "Le téléphone est obligatoire.";
+        else if (!/^\+?[\d\s]{8,15}$/.test(form.phone)) newErrors.phone = "Numéro invalide.";
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
+    const handleSave = () => {
+        if (!validate()) return;
+        toast({ title: "Profil mis à jour", description: "Vos informations ont été sauvegardées." });
+    };
+    
     return (
         <div className="min-h-screen bg-background pt-24 pb-16">
             <div className="container mx-auto px-4 max-w-2xl">
@@ -79,25 +89,32 @@ const Profile = () => {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="email" className="flex items-center gap-2">
-                                    <Mail size={14} /> Email
+                                    <Mail size={14} /> Email <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     value={form.email}
-                                    onChange={e => setForm({ ...form, email: e.target.value })}
+                                    onChange={e => { setForm({ ...form, email: e.target.value }); setErrors(p => ({ ...p, email: undefined })); }}
+                                    aria-invalid={!!errors.email}
+                                    className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
                                 />
+                                {errors.email && <p className="text-destructive text-xs">{errors.email}</p>}
                             </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="phone" className="flex items-center gap-2">
-                                    <Phone size={14} /> Téléphone
+                                    <Phone size={14} /> Téléphone <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="phone"
                                     value={form.phone}
-                                    onChange={e => setForm({ ...form, phone: e.target.value })}
+                                    onChange={e => { setForm({ ...form, phone: e.target.value }); setErrors(p => ({ ...p, phone: undefined })); }}
                                     placeholder="+216 XX XXX XXX"
+                                    aria-invalid={!!errors.phone}
+                                    className={errors.phone ? "border-destructive focus-visible:ring-destructive" : ""}
                                 />
+                                {errors.phone && <p className="text-destructive text-xs">{errors.phone}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="zip" className="flex items-center gap-2">

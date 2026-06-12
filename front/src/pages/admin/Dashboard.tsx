@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/store/hook";
-import { fetchProducts } from "@/store/productSlice";
 import { fetchCommandes } from "@/store/CommandeSlice";
 import { fetchDashboard } from "@/store/statsSlice";
 import MonthlyStatsCharts from "./Dashboard/MonthlyStats";
