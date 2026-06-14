@@ -1,36 +1,36 @@
+// AdminOrders.tsx
 import { useEffect, useState } from "react";
-import { MapPin, Search, Truck, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { Status, DeliveryMethod, CommandeDto } from "@/models/Commande";
+import { Status, CommandeDto } from "@/models/Commande";
 import { fetchCommandes, setFilters, setPage, updateCommandeStatus } from "@/store/CommandeSlice";
-import { IMAGE_API_URL } from "@/config/config";
-import { ALL_STATUSES, allowedStatusTransitions, STATUS_BY_DELIVERY_METHOD, STATUS_COLORS, STATUS_LABELS } from "@/models/constants/StatusConstants";
-import EnhancedSelect from "@/components/admin/EnhancedSelect";
+import { ALL_STATUSES, STATUS_COLORS, STATUS_LABELS } from "@/models/constants/StatusConstants";
 import { useToast } from "../../hooks/use-toast";
+import OrderCard from "@/components/admin/OrderCard";
 
 const AdminOrders = () => {
   const dispatch = useAppDispatch();
   const { items: orders, currentPage, totalPages, filters } = useAppSelector(state => state.commande);
   const [selectedStatuses, setSelectedStatuses] = useState<Status[]>([]);
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pendingChange, setPendingChange] = useState<{ orderId: number; status: Status } | null>(null);
   const [commentaire, setCommentaire] = useState("");
-  const { toast } = useToast()
+  const { toast } = useToast();
+
   const handleStatusChange = (id: number, status: Status) => {
-  if (status !== Status.ANNULEE) {
-    dispatch(updateCommandeStatus({ id, status })).unwrap().catch((err: any) => {
-      toast({
-        title: err?.errorCode ?? "Error",
-        description: err?.message ?? "une erreur est survenue",
-        variant: "destructive",
+    if (status !== Status.ANNULEE) {
+      dispatch(updateCommandeStatus({ id, status })).unwrap().catch((err: any) => {
+        toast({
+          title: err?.errorCode ?? "Error",
+          description: err?.message ?? "une erreur est survenue",
+          variant: "destructive",
+        });
       });
-    });
-    return;
-  }
-  setPendingChange({ orderId: id, status });
-  setCommentaire("");
-};
+      return;
+    }
+    setPendingChange({ orderId: id, status });
+    setCommentaire("");
+  };
 
   const confirmStatusChange = async () => {
     if (!pendingChange) return;
@@ -54,26 +54,23 @@ const AdminOrders = () => {
   const handlePageChange = (page: number) => {
     dispatch(setPage(page));
   };
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
       dispatch(setFilters({ search: search.trim() || null, page: 0 }));
     }, 400);
 
     return () => clearTimeout(timer);
   }, [search]);
-  useEffect(() => {
 
+  useEffect(() => {
     dispatch(fetchCommandes(filters));
   }, [dispatch, filters]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setSearch(val);
+    setSearch(e.target.value);
   };
-  const isStatusEnabled = (current: Status, target: Status) => {
-    return allowedStatusTransitions[current]?.includes(target);
-  };
+
   const toggleStatus = (s: Status) => {
     const updated = selectedStatuses.includes(s)
       ? selectedStatuses.filter((x) => x !== s)
@@ -86,8 +83,6 @@ const AdminOrders = () => {
     setSearch("");
     dispatch(setFilters({ search: null, page: 0 }));
   };
-
-
 
   const clearFilters = () => {
     setSearch("");
@@ -151,110 +146,16 @@ const AdminOrders = () => {
       {/* Orders */}
       <div className="space-y-4">
         {orders.map((order: CommandeDto) => (
-          <div key={order.id} className="bg-card border border-border rounded-xl p-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-              <div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className="font-heading font-bold text-foreground">{order.ref}</h3>
-                  <span className={`inline-block text-[10px] font-heading uppercase tracking-wider px-2.5 py-1 rounded-full ${STATUS_COLORS[order.status]}`}>
-                    {STATUS_LABELS[order.status]}
-                  </span>
-                  <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                    {order.deliveryMethod === DeliveryMethod.PICKUP
-                      ? <><MapPin size={12} /> Retrait</>
-                      : <><Truck size={12} /> Livraison</>}
-                  </span>
-                </div>
-                <p className="text-muted-foreground text-sm mt-1">
-                  {order.userNom || order.guestFirstName} {order.userPrenom || order.guestLastName}
-                  {" • "}
-                  {order.username || order.guestEmail}
-                  {" • "}
-                  {new Date(order.createdAt).toLocaleString("fr-TN")}
-                </p>
-                {order.adress && (
-                  <p className="text-muted-foreground text-xs mt-1">
-                    📍 {order.adress}{order.city ? `, ${order.city}` : ""}
-                  </p>
-                )}
-              </div>
-
-              <EnhancedSelect
-                label=""
-                value={order.status}
-                options={STATUS_BY_DELIVERY_METHOD[order.deliveryMethod].map((s) => ({
-                  value: s,
-                  label: STATUS_LABELS[s],
-                  disabled: !isStatusEnabled(order.status, s),
-                }))}
-                onChange={(val) => handleStatusChange(order.id, val as Status)}
-                className="w-48"
-              />
-              {/* Commentaire input — only shown for this order */}
-              {pendingChange?.orderId === order.id && pendingChange.status === Status.ANNULEE && (
-                <div className="flex items-center gap-2 w-full mt-3">
-                  <input
-                    autoFocus
-                    type="text"
-                    placeholder="Commentaire (optionnel)..."
-                    value={commentaire}
-                    onChange={(e) => setCommentaire(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && confirmStatusChange()}
-                    className="flex-1 min-w-0 bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-                  />
-                  <button
-                    onClick={confirmStatusChange}
-                    className="shrink-0 px-3 py-2.5 rounded-lg bg-primary text-primary-foreground text-xs font-heading uppercase tracking-wider hover:bg-primary/90 transition-colors"
-                  >
-                    Confirmer
-                  </button>
-                  <button
-                    onClick={() => setPendingChange(null)}
-                    className="shrink-0 p-2.5 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Items */}
-            <div className="border-t border-border pt-4 space-y-3">
-              {order.items.map((item, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  {item.productImage && (
-                    <img
-                      src={`${IMAGE_API_URL}/${encodeURIComponent(item.productImage)}`}
-                      alt={item.productName}
-                      className="w-10 h-10 rounded-lg bg-secondary object-contain flex-shrink-0"
-                    />
-                  )}
-                  <div className="flex-1 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      <span className="text-foreground font-medium">{item.productName}</span>
-                      <span className="text-xs ml-1">
-                        ({item.variantSize} • {item.variantColor}) × {item.quantity}
-                      </span>
-                    </span>
-                    <span className="font-heading font-bold text-foreground">
-                      {(item.unitPrice * item.quantity).toFixed(2)} TND
-                    </span>
-                  </div>
-                </div>
-              ))}
-
-              <div className="flex justify-between items-center pt-3 border-t border-border">
-                {order.deliveryFee > 0 && (
-                  <span className="text-muted-foreground text-xs">
-                    Livraison: {order.deliveryFee.toFixed(2)} TND
-                  </span>
-                )}
-                <span className="font-heading font-black text-lg text-foreground ml-auto">
-                  {order.totalPrice.toFixed(2)} TND
-                </span>
-              </div>
-            </div>
-          </div>
+          <OrderCard
+            key={order.id}
+            order={order}
+            onStatusChange={handleStatusChange}
+            pendingCancel={pendingChange?.orderId === order.id && pendingChange.status === Status.ANNULEE}
+            commentaire={commentaire}
+            onCommentaireChange={setCommentaire}
+            onConfirmCancel={confirmStatusChange}
+            onCancelCancel={() => setPendingChange(null)}
+          />
         ))}
 
         {orders.length === 0 && (

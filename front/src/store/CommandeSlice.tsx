@@ -4,9 +4,10 @@ import { Commande, CommandeDto, CommandeFilterRequest, CommandeRequest } from "@
 import { adminApi } from "@/services/AdminApi";
 import { PagedResponse } from "@/models/PagedResponse";
 import api from "@/services/http-common";
+import { CommandeItemDto } from "@/models/CommandItem";
 
 type Status = "idle" | "loading" | "succeeded" | "failed";
-
+type StatusItems = "idle" | "loading" | "succeeded" | "failed";
 interface CommandeState {
   items: CommandeDto[];
   totalPages: number;
@@ -14,8 +15,10 @@ interface CommandeState {
   currentPage: number;
   filters: CommandeFilterRequest;
   status: Status;
+  statusItems: StatusItems;
   error: string | null;
   myOrders: CommandeDto[];
+  OrderItems: Record<string, CommandeItemDto[]>;
   myOrdersStatus: Status;
   selectedOrder: CommandeDto | null;
   selectedOrderStatus: "idle" | "loading" | "succeeded" | "failed";
@@ -36,8 +39,10 @@ const initialState: CommandeState = {
   currentPage: 0,
   filters: initialFilters,
   status: "idle",
+  statusItems: "idle",
   error: null,
   myOrders: [],
+  OrderItems: {},
   myOrdersStatus: "idle",
   selectedOrder: null,
   selectedOrderStatus: "idle",
@@ -83,10 +88,23 @@ export const fetchCommandes = createAsyncThunk<
         params.append(key, String(value));
       }
     });
-    const response = await adminApi.get("/commandes", { params });
+    const response = await adminApi.get("/commande/getAll", { params });
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.error || "Failed to fetch commandes");
+  }
+});
+export const fetchCommandeItems = createAsyncThunk<
+  CommandeItemDto[],
+  string,
+  { rejectValue: string }
+>("commandes/items/fetchAll", async (ref, { rejectWithValue }) => {
+  try {
+    
+    const response = await adminApi.get("/commande/items", { params: { ref } });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.error || "Failed to fetch commandes items");
   }
 });
 export const fetchOrderByRef = createAsyncThunk<
@@ -156,6 +174,19 @@ const commandeSlice = createSlice({
         state.currentPage = action.payload.currentPage;
       })
       .addCase(fetchCommandes.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload ?? "Unknown error";
+      })
+      .addCase(fetchCommandeItems.pending, (state) => {
+        state.statusItems = "loading";
+        state.error = null;
+      })
+      .addCase(fetchCommandeItems.fulfilled, (state, action) => {
+        state.statusItems = "succeeded";
+        state.OrderItems[action.meta.arg] = action.payload;
+      
+      })
+      .addCase(fetchCommandeItems.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload ?? "Unknown error";
       })

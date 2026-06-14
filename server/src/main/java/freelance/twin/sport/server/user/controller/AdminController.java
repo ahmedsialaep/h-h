@@ -151,47 +151,7 @@ public class AdminController {
     }
 
     //commande
-    @GetMapping("/commandes")
-    public ResponseEntity<Map<String, Object>> getAllCommandes(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) UUID userId,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) List<Status> statuses
-    ) {
-        CommandeFilterRequest filter = new CommandeFilterRequest();
-        filter.setPage(page);
-        filter.setPageSize(pageSize);
-        filter.setUserId(userId);
-        filter.setSearch(search);
-        filter.setStatus(statuses);
 
-        Page<Commande> commandePage = commandeService.retrieveAllCommandes(filter);
-        List<CommandeDto> commandesDTO = commandePage.getContent()
-                .stream()
-                .map(CommandeMapper::toDTO)
-                .toList();
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", commandesDTO);
-        response.put("currentPage", commandePage.getNumber());
-        response.put("totalItems", commandePage.getTotalElements());
-        response.put("totalPages", commandePage.getTotalPages());
-        response.put("pageSize", commandePage.getSize());
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PutMapping("/commande/{id}/status")
-    public ResponseEntity<?> updateStatut(
-            @PathVariable Long id,
-            @RequestParam Status status,
-            @RequestParam(required = false) String commentaire
-    ) {
-        Commande commande= commandeService.updateStatus(id, status,commentaire);
-
-        return ResponseEntity.ok(CommandeMapper.toDTO(commande));
-    }
 
     //magasin
 

@@ -9,7 +9,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "commande_items")
+@Table(name = "commande_items",
+        indexes = {@Index(name = "idx_commande_item_commande_ref", columnList = "commande_ref")}
+        )
 public class CommandItem {
 
     @Id
@@ -19,6 +21,9 @@ public class CommandItem {
     @ManyToOne
     @JoinColumn(name = "commande_id", nullable = false)
     private Commande commande;
+
+    @Column(name = "commande_ref")
+    private String commandeRef;
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)

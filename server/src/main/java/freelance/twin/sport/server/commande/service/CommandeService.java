@@ -3,15 +3,15 @@ package freelance.twin.sport.server.commande.service;
 import freelance.twin.sport.server.cart.entity.Cart;
 import freelance.twin.sport.server.cart.exception.EmptyCartException;
 import freelance.twin.sport.server.cart.repository.CartRepository;
-import freelance.twin.sport.server.commande.dto.CommandeFilterRequest;
-import freelance.twin.sport.server.commande.dto.CommandeItemRequest;
-import freelance.twin.sport.server.commande.dto.CommandeRequest;
+import freelance.twin.sport.server.commande.dto.*;
 import freelance.twin.sport.server.commande.entity.CommandItem;
 import freelance.twin.sport.server.commande.entity.Commande;
 import freelance.twin.sport.server.commande.entity.DeliveryMethod;
 import freelance.twin.sport.server.commande.entity.Status;
 import freelance.twin.sport.server.commande.exception.EmptyRequestException;
 import freelance.twin.sport.server.commande.exception.QteInsuffisantException;
+import freelance.twin.sport.server.commande.mapper.CommandeMapper;
+import freelance.twin.sport.server.commande.repository.CommandeItemRepository;
 import freelance.twin.sport.server.commande.repository.CommandeRepository;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
@@ -49,6 +49,8 @@ public class CommandeService {
     private final ProductVarsRepository varsRepository;
     private final StockReservationService reservationService;
     private final OrderStatusMessageService orderStatusMessageService;
+    private final CommandeItemRepository commandeItemRepository;
+
     // Retrieve all commandes
     public List<Commande> retrieveAllCommandes() {
         return commandeRepository.findAll();
@@ -198,7 +200,7 @@ public class CommandeService {
     }
 
     @Transactional
-    public Commande createCommande(CommandeRequest request, UUID userId) {
+    public CommandeDto createCommande(CommandeRequest request, UUID userId) {
         Commande commande = new Commande();
         commande.setRef("CMD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         commande.setCreatedAt(LocalDateTime.now());
@@ -222,14 +224,11 @@ public class CommandeService {
             buildItemsFromRequest(commande, request.getItems());
         }
 
-        // save first so items are persisted
         Commande saved = commandeRepository.save(commande);
 
-        // now handle reservations — items are loaded
         if (userId != null) {
             reservationService.deleteAllCartReservations(userId);
 
-            // ✅ Build all in memory, then ONE saveAll instead of N inserts
             List<StockReservation> orderReservations = saved.getItems().stream()
                     .map(item -> reservationService.buildReservation(
                             item.getVariant().getId(),
@@ -243,7 +242,8 @@ public class CommandeService {
             reservationService.saveAll(orderReservations);
         }
 
-        return saved;
+        // ✅ session still open here — Brand, Variant, Product all accessible
+        return CommandeMapper.toDTOwithItems(saved);
     }
     private void buildItemsFromCart(Commande commande, Cart cart) {
         if (cart.getItems().isEmpty())
@@ -279,6 +279,7 @@ public class CommandeService {
             item.setVariant(cartItem.getVariant());
             item.setQuantity(cartItem.getQuantity());
             item.setUnitPrice(cartItem.getProduct().getPrice());
+            item.setCommandeRef(commande.getRef());
             return item;
         }).toList();
 
@@ -313,6 +314,7 @@ public class CommandeService {
             item.setProduct(product);
             item.setVariant(variant);
             item.setQuantity(req.getQuantity());
+            item.setCommandeRef(commande.getRef());
             item.setUnitPrice(product.getPrice());
             return item;
         }).toList();
@@ -332,5 +334,12 @@ public class CommandeService {
     }
     public Commande findByRef(String ref){
         return commandeRepository.findCommandeByRef(ref);
+    }
+    @Transactional
+    public List<CommandeItemDto> findCommandeItemsByRef(String ref) {
+        return commandeItemRepository.findAllByCommande_Ref(ref)
+                .stream()
+                .map(CommandeMapper::toItemDTO)
+                .toList();
     }
 }

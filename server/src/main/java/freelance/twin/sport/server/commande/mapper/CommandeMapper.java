@@ -35,6 +35,34 @@ public class CommandeMapper {
             dto.setUserPrenom(c.getUser().getPrenom());
         }
 
+        return dto;
+    }
+    public static CommandeDto toDTOwithItems(Commande c) {
+        CommandeDto dto = new CommandeDto();
+        dto.setId(c.getId());
+        dto.setRef(c.getRef());
+        dto.setStatus(c.getStatus());
+        dto.setCreatedAt(c.getCreatedAt());
+        dto.setUpdatedAt(c.getUpdatedAt());
+        dto.setDeliveryMethod(c.getDeliveryMethod());
+        dto.setAdress(c.getAdress());
+        dto.setCity(c.getCity());
+        dto.setPhone(c.getPhone());
+        dto.setTotalPrice(c.getTotalPrice());
+        dto.setDeliveryFee(c.getDeliveryFee());
+        dto.setNotes(c.getNotes());
+        dto.setGuestFirstName(c.getGuestFirstName());
+        dto.setGuestLastName(c.getGuestLastName());
+        dto.setGuestEmail(c.getGuestEmail());
+        dto.setGuestPhone(c.getGuestPhone());
+        dto.setCommentaire(c.getCommentaire());
+        if (c.getUser() != null) {
+            dto.setUserId(c.getUser().getId());
+            dto.setUsername(c.getUser().getUsername());
+            dto.setUserNom(c.getUser().getNom());
+            dto.setUserPrenom(c.getUser().getPrenom());
+        }
+
         if (c.getItems() != null) {
             dto.setItems(c.getItems().stream()
                     .map(CommandeMapper::toItemDTO)
@@ -44,8 +72,7 @@ public class CommandeMapper {
         return dto;
     }
 
-
-    private static CommandeItemDto toItemDTO(CommandItem item) {
+    public static CommandeItemDto toItemDTO(CommandItem item) {
         CommandeItemDto dto = new CommandeItemDto();
         dto.setId(item.getId());
         dto.setQuantity(item.getQuantity());

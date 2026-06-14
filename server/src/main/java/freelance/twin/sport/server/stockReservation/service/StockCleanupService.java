@@ -55,26 +55,14 @@ public class StockCleanupService {
     }
     private void restoreStock(List<StockReservation> expiredReservations) {
 
-        List<Long> variantIds = expiredReservations.stream()
-                .map(StockReservation::getVariantId)
-                .distinct()
-                .toList();
+        Map<Long, Integer> totalsByVariant = expiredReservations.stream()
+                .collect(Collectors.groupingBy(
+                        StockReservation::getVariantId,
+                        Collectors.summingInt(StockReservation::getQuantity)
+                ));
 
-        List<ProductVars> variants = productVarsRepository.findAllById(variantIds);
-
-        Map<Long, ProductVars> variantMap = variants.stream()
-                .collect(Collectors.toMap(ProductVars::getId, v -> v));
-
-        for (StockReservation reservation : expiredReservations) {
-            ProductVars variant = variantMap.get(reservation.getVariantId());
-            if (variant != null) {
-                variant.setAvailableQuantity(
-                        variant.getAvailableQuantity() + reservation.getQuantity()
-                );
-            }
-        }
-
-        productVarsRepository.saveAll(variants);
+        totalsByVariant.forEach(productVarsRepository::incrementStock
+        );
     }
     private void restoreUserCart(List<StockReservation> expiredReservations) {
 

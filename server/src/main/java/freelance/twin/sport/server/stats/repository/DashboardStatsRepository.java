@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -73,12 +74,15 @@ public class DashboardStatsRepository {
                 .setParameter("endOfDay", LocalDate.now().atTime(LocalTime.MAX))
                 .getSingleResult();
 
-        Long lowStock = (Long) entityManager.createQuery("""
-                            SELECT COUNT(v)
-                            FROM ProductVars v
-                            WHERE v.stock <= 5
-                        """)
-                .getSingleResult();
+        Long lowStock = Optional.ofNullable(
+                (Long) entityManager.createQuery("""
+            SELECT COUNT(DISTINCT v.product.id)
+            FROM ProductVars v
+            GROUP BY v.product.id
+            HAVING SUM(v.stock) <= 5
+        """)
+                        .getSingleResultOrNull()
+        ).orElse(0L);
 
         return new DashboardSummaryDto(
                 ((Number) summaryResult[0]).doubleValue(),

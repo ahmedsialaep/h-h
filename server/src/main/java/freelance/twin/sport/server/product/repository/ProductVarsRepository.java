@@ -3,6 +3,7 @@ package freelance.twin.sport.server.product.repository;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -29,4 +30,14 @@ public interface ProductVarsRepository extends JpaRepository<ProductVars, Long> 
     List<Object[]> getStockStats(
             @Param("productIds") List<Long> productIds
     );
+
+    @Modifying
+    @Query("UPDATE ProductVars p SET p.availableQuantity = p.availableQuantity - :qty " +
+            "WHERE p.id = :variantId AND p.availableQuantity >= :qty")
+    int decrementStock(@Param("variantId") Long variantId, @Param("qty") int qty);
+
+    @Modifying
+    @Query("UPDATE ProductVars p SET p.availableQuantity = p.availableQuantity + :qty " +
+            "WHERE p.id = :variantId")
+    void incrementStock(@Param("variantId") Long variantId, @Param("qty") int qty);
 }
