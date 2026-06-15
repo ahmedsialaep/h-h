@@ -9,12 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface CommandeRepository extends JpaRepository<Commande, Long> {
-    List<Commande> findCommandesByUser_Id(UUID userId);
 
     @Query("""
     SELECT DISTINCT c FROM Commande c
@@ -41,4 +41,7 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     );
 
     Commande findCommandeByRef(String ref);
+
+
+    List<Commande> findCommandesByUser_IdOrderByCreatedAtDesc(UUID userId);
 }

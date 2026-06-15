@@ -3,6 +3,7 @@ import ProductCard from "@/components/ProductCard";
 import { motion } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchProducts, setPage } from "@/store/productSlice";
+import PageSkeleton from "../components/PageSkeleton";
 
 const PAGE_SIZE = 12;
 
@@ -63,7 +64,8 @@ const NewArrivals = () => {
 
         <p className="text-muted-foreground text-sm mb-6">{total} nouveautés</p>
 
-        {status === "loading" && <p className="text-muted-foreground">Chargement...</p>}
+        {status === "loading" &&
+        <PageSkeleton variant="grid" gridCount={4}/>}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {products.map((product, i) => (

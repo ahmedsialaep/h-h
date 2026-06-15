@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMagasin } from "@/store/MagasinSlice";
 import Loading from "@/components/Loading";
 import { lat, longt } from "../models/constants/LocalisationConstant";
+import PageSkeleton from "../components/PageSkeleton";
 
 
 const About = () => {
@@ -49,9 +50,6 @@ const About = () => {
     return () => { map.remove(); };
   }, [status, STORE_LAT, STORE_LNG]);
 
-  if (status === "loading") {
-    return <Loading />;
-  }
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-16">
@@ -137,13 +135,22 @@ const About = () => {
 
       <section className="container mx-auto px-4 md:px-6">
         <h2 className="font-heading font-black text-2xl md:text-3xl text-foreground mb-6">NOUS TROUVER</h2>
-        <div ref={mapRef} className="w-full h-80 rounded-xl overflow-hidden border border-border mb-4" />
-        <div className="bg-card rounded-lg p-5 border border-border">
-          <p className="font-heading font-bold text-foreground">{magasin?.name}</p>
-          <p className="text-muted-foreground text-sm mt-1">{magasin?.city}, {magasin?.region}</p>
-          <p className="text-muted-foreground text-sm">{magasin?.openingHours}</p>
-          <p className="text-muted-foreground text-sm">+216 {magasin?.phone}</p>
-        </div>
+
+        {status === "loading" ? (
+          <>
+            <PageSkeleton variant="map" />
+          </>
+        ) : (
+          <>
+            <div ref={mapRef} className="w-full h-80 rounded-xl overflow-hidden border border-border mb-4" />
+            <div className="bg-card rounded-lg p-5 border border-border">
+              <p className="font-heading font-bold text-foreground">{magasin?.name}</p>
+              <p className="text-muted-foreground text-sm mt-1">{magasin?.city}, {magasin?.region}</p>
+              <p className="text-muted-foreground text-sm">{magasin?.openingHours}</p>
+              <p className="text-muted-foreground text-sm">+216 {magasin?.phone}</p>
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

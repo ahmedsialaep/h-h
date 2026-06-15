@@ -1,6 +1,7 @@
 package freelance.twin.sport.server.commande.controller;
 
 import freelance.twin.sport.server.commande.dto.CommandeDto;
+import freelance.twin.sport.server.commande.dto.CommandeFilterRequest;
 import freelance.twin.sport.server.commande.dto.CommandeRequest;
 import freelance.twin.sport.server.commande.entity.Commande;
 import freelance.twin.sport.server.commande.mapper.CommandeMapper;
@@ -8,6 +9,7 @@ import freelance.twin.sport.server.commande.service.CommandeService;
 import freelance.twin.sport.server.user.entity.User;
 import freelance.twin.sport.server.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,27 +32,14 @@ public class CommandeController {
     }
 
     @GetMapping("/{ref}")
-    public ResponseEntity<?> findByRef(
-            @PathVariable(name = "ref") String ref
-
-    ) {
-        Commande commande = commandeService.findByRef(ref);
-        CommandeDto dto = CommandeMapper.toDTO(commande);
-        return ResponseEntity.ok(dto);
+    public ResponseEntity<CommandeDto> findByRef(@PathVariable String ref) {
+        return ResponseEntity.ok(commandeService.findByRef(ref));
     }
 
     @GetMapping("/my-orders")
-    public ResponseEntity<List<CommandeDto>> getMesCommandes() {
-
-        User user = userService.getCurrentUser();
-
-        List<Commande> commandeList = commandeService.retrieveAllCommandesByUser(user.getId());
-        List<CommandeDto> commandesDTO = commandeList
-                .stream()
-                .map(CommandeMapper::toDTOwithItems)
-                .toList();
-
-        return ResponseEntity.ok(commandesDTO);
+    public ResponseEntity<Page<CommandeDto>> getMesCommandes(CommandeFilterRequest filter) {
+        filter.setUserId(userService.getCurrentUser().getId());
+        return ResponseEntity.ok(commandeService.retrieveAllCommandes(filter));
     }
 
 }

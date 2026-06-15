@@ -139,7 +139,7 @@ const AppContent = () => {
                 <Route
                   path="/orders"
                   element={
-                    <ProtectedRoute requireAuth require2FA>
+                    <ProtectedRoute requireAuth require2FA requireLoadingDefault>
                       <Orders />
                     </ProtectedRoute>
                   }

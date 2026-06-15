@@ -1,15 +1,12 @@
 import { Link } from "react-router-dom";
-import { SearchCheckIcon, ShoppingBag } from "lucide-react";
+import { SearchCheckIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { ProductDTO } from "@/models/Product";
 import { IMAGE_API_URL } from "@/config/config";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { CartItemDto } from "@/models/CartItem";
-import { addItem, syncCart } from "@/store/CartSlice";
+
 import { useToast } from "@/hooks/use-toast";
-import { useMemo } from "react";
-import { ProductVariantDTO } from "../models/ProductVars";
-import { fetchVariantStock } from "../store/productSlice";
+
 
 interface ProductCardProps {
   product: ProductDTO;

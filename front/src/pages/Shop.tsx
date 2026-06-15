@@ -12,6 +12,7 @@ import Loading from "@/components/Loading";
 import EmptyState from "@/components/EmptyState";
 import EnhancedSelect from "@/components/admin/EnhancedSelect";
 import ShopFilters from "@/components/ShopFilters";
+import PageSkeleton from "../components/PageSkeleton";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Plus Récents" },
@@ -37,7 +38,7 @@ const Shop = () => {
   const brands = useAppSelector((state) => state.brands.items);
   const types = useAppSelector((state) => state.types.items);
 
-  
+
   useEffect(() => {
     dispatch(fetchBrands());
     dispatch(fetchTypes());
@@ -50,7 +51,7 @@ const Shop = () => {
     }));
   }, []);
 
-  
+
   useEffect(() => {
     const isSearching = !!filters.search;
     const timeout = setTimeout(() => {
@@ -150,7 +151,7 @@ const Shop = () => {
             value={searchInput}
             onChange={(e) => {
               setSearchInput(e.target.value);
-              
+
               const val = e.target.value.trim();
               dispatch(setFilter({ search: val || null, page: 0 }));
             }}
@@ -191,9 +192,9 @@ const Shop = () => {
           <div className="flex-1">
             <p className="text-muted-foreground text-sm mb-4">{total} produits</p>
 
-            {status === "loading" && <Loading fullScreen size="lg" text="Chargement des produits..." />}
-
-            {status !== "loading" && (
+            {status === "loading" ? (
+              <PageSkeleton variant="grid" />
+            ) : (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                   {products.map((product, i) => (
@@ -227,11 +228,10 @@ const Shop = () => {
                       <button
                         key={i}
                         onClick={() => dispatch(setPage(i))}
-                        className={`w-9 h-9 rounded-lg font-heading text-xs font-bold transition-colors ${
-                          filters.page === i
+                        className={`w-9 h-9 rounded-lg font-heading text-xs font-bold transition-colors ${filters.page === i
                             ? "bg-primary text-primary-foreground"
                             : "bg-card border border-border text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         {i + 1}
                       </button>

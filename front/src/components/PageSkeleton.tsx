@@ -2,7 +2,7 @@ import { Children, cloneElement, isValidElement, ReactElement, ReactNode } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-type Variant = "default" | "list" | "grid" | "detail" | "form" | "table";
+type Variant = "default" | "list" | "grid" | "detail" | "form" | "table" | "orders" | "map";
 
 interface PageSkeletonProps {
   /** Optional explicit variant. If omitted and `children` is provided, the
@@ -17,6 +17,7 @@ interface PageSkeletonProps {
    *  instead of rendering predefined blocks. Defaults to true. */
   mirror?: boolean;
   className?: string;
+  gridCount?: number;
 }
 
 /* ---------- Detection ---------- */
@@ -45,17 +46,54 @@ function detectBlocks(node: ReactNode, found: Set<Variant>) {
 
 /* ---------- Block renderers ---------- */
 
-const Header = () => (
-  <div className="mb-10 space-y-3">
-    <Skeleton className="h-4 w-32" />
-    <Skeleton className="h-10 w-2/3 md:w-1/2" />
-    <Skeleton className="h-4 w-1/2" />
+const MapBlock = () => (
+  <section className="container mx-auto px-4 md:px-6">
+    <Skeleton className="h-8 w-40 mb-6" /> 
+    <Skeleton className="w-full h-80 rounded-xl mb-4" /> {/* map */}
+    <div className="bg-card rounded-lg p-5 border border-border space-y-2">
+      <Skeleton className="h-5 w-40" />   
+      <Skeleton className="h-4 w-32" />   
+      <Skeleton className="h-4 w-48" />   
+      <Skeleton className="h-4 w-28" />   
+    </div>
+  </section>
+);
+const OrdersBlock = () => (
+  <div className="min-h-screen bg-background pt-24 pb-16">
+    <div className="container mx-auto px-4 max-w-3xl">
+      {/* Header */}
+      <Skeleton className="h-10 w-48 mb-8" />
+
+      {/* Order cards */}
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between p-5">
+              {/* Left: icon + ref + date */}
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+              {/* Right: delivery + status + price + eye */}
+              <div className="flex items-center gap-3">
+                <Skeleton className="hidden sm:block h-3 w-16" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   </div>
 );
-
-const GridBlock = () => (
+const GridBlock = ({ count = 8 }: { count?: number }) => (
   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    {Array.from({ length: 8 }).map((_, i) => (
+    {Array.from({ length: count }).map((_, i) => (
       <div key={i} className="space-y-3">
         <Skeleton className="aspect-square w-full rounded-xl" />
         <Skeleton className="h-4 w-3/4" />
@@ -135,13 +173,15 @@ const DefaultBlock = () => (
   </div>
 );
 
-const blockMap: Record<Variant, () => JSX.Element> = {
+const blockMap: Record<Variant, (props?: any) => JSX.Element> = {
   default: DefaultBlock,
   list: ListBlock,
   grid: GridBlock,
   detail: DetailBlock,
   form: FormBlock,
   table: TableBlock,
+  orders: OrdersBlock,
+  map: MapBlock,
 };
 
 /* ---------- Mirror mode: clone the real tree, replace leaves with skeletons ---------- */
@@ -274,7 +314,7 @@ function mirrorTree(node: ReactNode, depth = 0, key?: React.Key): ReactNode {
  * 3. Force-include extra blocks:
  *      <PageSkeleton include={["table", "grid"]} />
  */
-export const PageSkeleton = ({ variant, children, include, mirror = true, className }: PageSkeletonProps) => {
+export const PageSkeleton = ({ variant, children, include, mirror = true, className, gridCount }: PageSkeletonProps) => {
   // Mirror mode: when children are provided and no explicit variant/include,
   // clone the real tree and replace leaves with skeletons. This adapts to ANY
   // layout (profile cards, mixed grid+form+detail, etc.) automatically.
@@ -294,16 +334,16 @@ export const PageSkeleton = ({ variant, children, include, mirror = true, classN
   include?.forEach((b) => blocks.add(b));
   if (blocks.size === 0) blocks.add("default");
 
-  const order: Variant[] = ["detail", "form", "table", "grid", "list", "default"];
+  const order: Variant[] = ["detail", "form", "table", "grid", "list", "default", "orders", "map"];
   const ordered = order.filter((b) => blocks.has(b));
 
   return (
     <div className={cn("min-h-screen bg-background pt-24 pb-16", className)}>
       <div className="container mx-auto px-4 md:px-6 space-y-10">
-        <Header />
+
         {ordered.map((b) => {
           const Block = blockMap[b];
-          return <Block key={b} />;
+          return <Block key={b} {...(b === "grid" ? { count: gridCount } : {})} />;
         })}
       </div>
     </div>

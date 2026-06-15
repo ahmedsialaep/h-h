@@ -7,6 +7,7 @@ import freelance.twin.sport.server.commande.entity.Commande;
 import freelance.twin.sport.server.commande.entity.Status;
 import freelance.twin.sport.server.commande.mapper.CommandeMapper;
 import freelance.twin.sport.server.commande.service.CommandeService;
+import freelance.twin.sport.server.config.custom.PagedResponse;
 import freelance.twin.sport.server.user.entity.User;
 import freelance.twin.sport.server.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class CommandeAdminController {
         return ResponseEntity.ok(commandeItemDtos);
     }
     @GetMapping("/getAll")
-    public ResponseEntity<Map<String, Object>> getAllCommandes(
+    public ResponseEntity<PagedResponse<CommandeDto>> getAllCommandes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) UUID userId,
@@ -47,20 +48,7 @@ public class CommandeAdminController {
         filter.setSearch(search);
         filter.setStatus(statuses);
 
-        Page<Commande> commandePage = commandeService.retrieveAllCommandes(filter);
-        List<CommandeDto> commandesDTO = commandePage.getContent()
-                .stream()
-                .map(CommandeMapper::toDTO)
-                .toList();
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", commandesDTO);
-        response.put("currentPage", commandePage.getNumber());
-        response.put("totalItems", commandePage.getTotalElements());
-        response.put("totalPages", commandePage.getTotalPages());
-        response.put("pageSize", commandePage.getSize());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(PagedResponse.of(commandeService.retrieveAllCommandes(filter)));
     }
 
     @PutMapping("/{id}/status")

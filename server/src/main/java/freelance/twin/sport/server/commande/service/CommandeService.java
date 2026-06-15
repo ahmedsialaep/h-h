@@ -13,6 +13,7 @@ import freelance.twin.sport.server.commande.exception.QteInsuffisantException;
 import freelance.twin.sport.server.commande.mapper.CommandeMapper;
 import freelance.twin.sport.server.commande.repository.CommandeItemRepository;
 import freelance.twin.sport.server.commande.repository.CommandeRepository;
+import freelance.twin.sport.server.handler.event.OrderStatusChangedEvent;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
 import freelance.twin.sport.server.product.exception.ProductNotFoundException;
@@ -26,13 +27,16 @@ import freelance.twin.sport.server.user.entity.User;
 import freelance.twin.sport.server.user.repository.UserRepository;
 import freelance.twin.sport.server.config.mail.status_order.OrderStatusMessageService;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -50,17 +54,15 @@ public class CommandeService {
     private final StockReservationService reservationService;
     private final OrderStatusMessageService orderStatusMessageService;
     private final CommandeItemRepository commandeItemRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    // Retrieve all commandes
-    public List<Commande> retrieveAllCommandes() {
-        return commandeRepository.findAll();
-    }
-    public Page<Commande> retrieveAllCommandes(CommandeFilterRequest filter) {
-        Pageable pageable = PageRequest.of(
-                filter.getPage(),
-                filter.getPageSize(),
-                Sort.by("createdAt").descending()
-        );
+
+    public Page<CommandeDto> retrieveAllCommandes(CommandeFilterRequest filter) {
+        Sort sort = filter.getSortDir().equalsIgnoreCase("asc")
+                ? Sort.by(filter.getSortBy()).ascending()
+                : Sort.by(filter.getSortBy()).descending();
+
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getPageSize(), sort);
 
         String search = filter.getSearch() != null
                 ? "%" + filter.getSearch().toLowerCase().trim() + "%"
@@ -70,12 +72,8 @@ public class CommandeService {
                 ? filter.getStatus()
                 : null;
 
-        return commandeRepository.findAllWithFilters(
-                filter.getUserId(),
-                search,
-                statuses,
-                pageable
-        );
+        return commandeRepository.findAllWithFilters(filter.getUserId(), search, statuses, pageable)
+                .map(CommandeMapper::toDTO);
     }
 
     public Commande retrieveCommande(Long id) {
@@ -97,8 +95,11 @@ public class CommandeService {
     }
 
     // Retrieve all commandes By user
-    public List<Commande> retrieveAllCommandesByUser(UUID userId) {
-        return commandeRepository.findCommandesByUser_Id(userId);
+    public List<CommandeDto> retrieveAllCommandesByUser(UUID userId) {
+        return commandeRepository.findCommandesByUser_IdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(CommandeMapper::toDTO)
+                .toList();
     }
 
     @Transactional
@@ -140,7 +141,7 @@ public class CommandeService {
                 });
             }
 
-            case LIVREE, PRETE_RETRAIT -> {
+            case LIVREE, RECUPEREE -> {
                 List<ProductVars> variants = commande.getItems().stream()
                         .map(item -> {
                             ProductVars variant = item.getVariant();
@@ -170,7 +171,7 @@ public class CommandeService {
                     varsRepository.saveAll(variants);
                     reservationService.deleteOrderReservationByCommandeId(commandeId);
 
-                } else if (currentStatus == Status.LIVREE || currentStatus == Status.PRETE_RETRAIT) {
+                } else if (currentStatus == Status.LIVREE || currentStatus == Status.RECUPEREE) {
 
                     List<ProductVars> variants = commande.getItems().stream()
                             .map(item -> {
@@ -193,8 +194,8 @@ public class CommandeService {
         }
         commande.setStatus(status);
         commande.setUpdatedAt(LocalDateTime.now());
-        if(status != null) {
-            orderStatusMessageService.sendOrderStatus(userId,commande);
+        if (status != null) {
+            eventPublisher.publishEvent(new OrderStatusChangedEvent(userId, commande));
         }
         return commandeRepository.save(commande);
     }
@@ -240,6 +241,19 @@ public class CommandeService {
                     .toList();
 
             reservationService.saveAll(orderReservations);
+        }
+        else {
+            List<StockReservation> guestReservations = saved.getItems().stream()
+                    .map(item -> reservationService.buildReservation(
+                            item.getVariant().getId(),
+                            null,
+                            item.getQuantity(),
+                            ReservationType.ORDER,
+                            saved.getId()
+                    ))
+                    .toList();
+
+            reservationService.saveAll(guestReservations);
         }
 
         // ✅ session still open here — Brand, Variant, Product all accessible
@@ -302,11 +316,10 @@ public class CommandeService {
             ProductVars variant = varsRepository.findById(req.getVariantId())
                     .orElseThrow(() -> new VariantNotFoundException("Variante introuvable: " + req.getVariantId()));
 
-            int available = variant.getAvailableQuantity();
-            if (available < req.getQuantity()) {
+            int updated = varsRepository.decrementStock(variant.getId(), req.getQuantity());
+            if (updated == 0) {
                 throw new QteInsuffisantException(
-                        "Stock insuffisant pour: " + product.getName() +
-                                " (disponible: " + available + ", demandé: " + req.getQuantity() + ")"
+                        "Stock insuffisant pour: " + product.getName()
                 );
             }
             CommandItem item = new CommandItem();
@@ -332,10 +345,12 @@ public class CommandeService {
         commande.setDeliveryFee(deliveryFee);
         commande.setTotalPrice(totalPrice);
     }
-    public Commande findByRef(String ref){
-        return commandeRepository.findCommandeByRef(ref);
+    @Transactional(readOnly = true)
+    public CommandeDto findByRef(String ref) {
+        Commande commande = commandeRepository.findCommandeByRef(ref);
+        return CommandeMapper.toDTOwithItems(commande);
     }
-    @Transactional
+    @Transactional(readOnly = true)
     public List<CommandeItemDto> findCommandeItemsByRef(String ref) {
         return commandeItemRepository.findAllByCommande_Ref(ref)
                 .stream()

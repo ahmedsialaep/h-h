@@ -9,15 +9,17 @@ export const ProtectedRoute = ({
   requireAuth = false,
   require2FA = false,
   adminOnly = false,
+  requireLoadingDefault = false
 }: {
   children: React.ReactNode;
   requireAuth?: boolean;
   require2FA?: boolean;
   adminOnly?: boolean;
+  requireLoadingDefault?: boolean
 }) => {
   const { user, restoringSession } = useAppSelector((state) => state.auth);
 
-  if (restoringSession) return <Loading fullScreen size="lg" />;
+  if (restoringSession && !requireLoadingDefault) return <Loading fullScreen size="lg" />;
   if (requireAuth && !user) return <Navigate to="/login" replace />;
   if (require2FA && user && !user.verified2FA) return <Navigate to="/2fa" replace />;
   if (adminOnly && user && !user.isAdmin) return <Navigate to="/" replace />;

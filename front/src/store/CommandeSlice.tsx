@@ -18,6 +18,9 @@ interface CommandeState {
   statusItems: StatusItems;
   error: string | null;
   myOrders: CommandeDto[];
+  myOrdersTotalPages: number;
+  myOrdersCurrentPage: number;
+  myOrdersFilters: CommandeFilterRequest;
   OrderItems: Record<string, CommandeItemDto[]>;
   myOrdersStatus: Status;
   selectedOrder: CommandeDto | null;
@@ -26,12 +29,18 @@ interface CommandeState {
 
 const initialFilters: CommandeFilterRequest = {
   page: 0,
-  pageSize: 20,
+  pageSize: 10,
   userId: null,
   search: null,
   status: null,
 };
-
+const initialMyOrdersFilters: CommandeFilterRequest = {
+  page: 0,
+  pageSize: 7,
+  userId: null,
+  search: null,
+  status: null,
+};
 const initialState: CommandeState = {
   items: [],
   totalPages: 0,
@@ -42,8 +51,12 @@ const initialState: CommandeState = {
   statusItems: "idle",
   error: null,
   myOrders: [],
-  OrderItems: {},
+  myOrdersTotalPages: 0,
+  myOrdersCurrentPage: 0,
+  myOrdersFilters: initialMyOrdersFilters,
   myOrdersStatus: "idle",
+  OrderItems: {},
+  
   selectedOrder: null,
   selectedOrderStatus: "idle",
 };
@@ -62,12 +75,14 @@ export const createCommande = createAsyncThunk<
   }
 });
 export const fetchMyOrders = createAsyncThunk<
-  CommandeDto[],
-  void,
+  PagedResponse<CommandeDto>,
+  CommandeFilterRequest,
   { rejectValue: string }
->("commandes/myOrders", async (_, { rejectWithValue }) => {
+>("commandes/myOrders", async (filter, { rejectWithValue }) => {
   try {
-    const response = await api.get<CommandeDto[]>("/commande/my-orders");
+    const response = await api.get<PagedResponse<CommandeDto>>("/commande/my-orders", {
+      params: filter,
+    });
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.error || "Failed to fetch orders");
@@ -100,7 +115,7 @@ export const fetchCommandeItems = createAsyncThunk<
   { rejectValue: string }
 >("commandes/items/fetchAll", async (ref, { rejectWithValue }) => {
   try {
-    
+
     const response = await adminApi.get("/commande/items", { params: { ref } });
     return response.data;
   } catch (error: any) {
@@ -142,11 +157,20 @@ const commandeSlice = createSlice({
     setFilters: (state, action: PayloadAction<Partial<CommandeFilterRequest>>) => {
       state.filters = { ...state.filters, ...action.payload, page: 0 };
     },
+    setMyordersFilters: (state, action: PayloadAction<Partial<CommandeFilterRequest>>) => {
+      state.myOrdersFilters = { ...state.myOrdersFilters, ...action.payload, page: 0 };
+    },
     setPage: (state, action: PayloadAction<number>) => {
       state.filters.page = action.payload;
     },
+    setMyOrdersPage: (state, action: PayloadAction<number>) => {
+      state.myOrdersFilters.page = action.payload;
+    },
     resetFilters: (state) => {
       state.filters = initialFilters;
+    },
+    resetMyOrdersFilters: (state) => {
+      state.myOrdersFilters = initialMyOrdersFilters;
     },
   },
   extraReducers: (builder) => {
@@ -184,7 +208,7 @@ const commandeSlice = createSlice({
       .addCase(fetchCommandeItems.fulfilled, (state, action) => {
         state.statusItems = "succeeded";
         state.OrderItems[action.meta.arg] = action.payload;
-      
+
       })
       .addCase(fetchCommandeItems.rejected, (state, action) => {
         state.status = "failed";
@@ -199,7 +223,9 @@ const commandeSlice = createSlice({
       })
       .addCase(fetchMyOrders.fulfilled, (state, action) => {
         state.myOrdersStatus = "succeeded";
-        state.myOrders = action.payload;
+        state.myOrders = action.payload.content;
+        state.myOrdersTotalPages = action.payload.totalPages;
+        state.myOrdersCurrentPage = action.payload.currentPage;
       })
       .addCase(fetchMyOrders.rejected, (state, action) => {
         state.myOrdersStatus = "failed";
@@ -222,5 +248,5 @@ const commandeSlice = createSlice({
   },
 });
 
-export const { setFilters, setPage, resetFilters } = commandeSlice.actions;
+export const { setFilters, setMyordersFilters, setPage, resetFilters, resetMyOrdersFilters, setMyOrdersPage } = commandeSlice.actions;
 export default commandeSlice.reducer;
