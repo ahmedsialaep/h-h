@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle, Package, PackageCheck, Truck, MapPin, Search, ArrowLeft, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchOrderByRef } from "@/store/CommandeSlice";
@@ -64,7 +64,6 @@ const PICKUP_STEPS = [
 
 const OrderTracking = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { selectedOrder: order, selectedOrderStatus } = useAppSelector((state) => state.commande);
