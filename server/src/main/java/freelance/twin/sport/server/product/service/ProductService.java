@@ -7,6 +7,7 @@ import freelance.twin.sport.server.product.entity.Genre;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.exception.ProductNotFoundException;
 import freelance.twin.sport.server.product.mapper.ProductMapper;
+import freelance.twin.sport.server.product.projection.ProductProjection;
 import freelance.twin.sport.server.product.repository.ProductRepository;
 import freelance.twin.sport.server.product.repository.ProductVarsRepository;
 import freelance.twin.sport.server.product.specification.ProductSpecification;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -35,27 +37,17 @@ public class ProductService {
                 ? Sort.by(filter.getSortBy()).ascending()
                 : Sort.by(filter.getSortBy()).descending();
 
-        Pageable pageable = PageRequest.of(
-                filter.getPage(),
-                filter.getPageSize(),
-                sort
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getPageSize(), sort);
+        Specification<Product> spec = ProductSpecification.withFilters(filter);
+
+        Page<ProductProjection> productsPage = productRepository.findBy(
+                spec,
+                q -> q.as(ProductProjection.class).page(pageable)
         );
 
-        /*
-         * FETCH PRODUCTS
-         */
-        Page<Product> productsPage =
-                productRepository.findAll(
-                        ProductSpecification.withFilters(filter),
-                        pageable
-                );
-
-        /*
-         * FETCH PRODUCT IDS
-         */
         List<Long> productIds = productsPage.getContent()
                 .stream()
-                .map(Product::getId)
+                .map(ProductProjection::getId)
                 .toList();
 
         /*
@@ -96,7 +88,7 @@ public class ProductService {
                             new int[]{0, 0}
                     );
 
-            return ProductMapper.toDTOadmin(
+            return ProductMapper.fromProjection(
                     product,
                     stats[0],
                     stats[1]

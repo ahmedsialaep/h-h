@@ -5,6 +5,7 @@ import freelance.twin.sport.server.product.dto.ProductDto;
 import freelance.twin.sport.server.product.dto.ProductVariantDTO;
 import freelance.twin.sport.server.product.entity.Product;
 import freelance.twin.sport.server.product.entity.ProductVars;
+import freelance.twin.sport.server.product.projection.ProductProjection;
 
 import java.util.Comparator;
 import java.util.List;
@@ -12,36 +13,38 @@ import java.util.stream.Collectors;
 
 public class ProductMapper {
 
-    public static ProductDto toDTO(Product product) {
 
+    public static ProductDto fromProjection(ProductProjection p, int totalStock, int totalAvailableQte) {
         ProductDto dto = new ProductDto();
+        dto.setId(p.getId());
+        dto.setName(p.getName());
+        dto.setRef(p.getRef());
+        dto.setGender(p.getGender());
+        dto.setCategorie(p.getCategorie());
+        dto.setPrice(p.getPrice());
+        dto.setOriginalPrice(p.getOriginalPrice());
+        dto.setBuyPrice(p.getBuyPrice());
+        dto.setImage(p.getImage());
+        dto.setCreatedAt(p.getCreatedAt());
 
-        dto.setId(product.getId());
-        dto.setName(product.getName());
-        dto.setRef(product.getRef());
-        dto.setGender(product.getGender());
-        dto.setCategorie(product.getCategorie());
-        dto.setPrice(product.getPrice());
-        dto.setBuyPrice(product.getBuyPrice());
-        dto.setOriginalPrice(product.getOriginalPrice());
-        dto.setImage(product.getImage());
-        dto.setCreatedAt(product.getCreatedAt());
-        dto.setBrandId(product.getBrand().getId());
-        dto.setBrandName(product.getBrand().getBrand_name());
+        dto.setDescription(p.getDescription());
+        dto.setNewArrival(p.isNewArrival());
+        dto.setMarketVisible(p.isMarketVisible());
+        dto.setAverageRating(p.getAverageRating());
+        if (p.getBrand() != null) {
+            dto.setBrandId(p.getBrand().getId());
+            dto.setBrandName(p.getBrand().getBrand_name());
+        }
 
-        dto.setTypeId(product.getProductType().getId());
-        dto.setTypeName(product.getProductType().getType_name());
-
-        dto.setDescription(product.getDescription());
-        dto.setNewArrival(product.isNewArrival());
-        dto.setMarketVisible(product.isMarketVisible());
-        dto.setAverageRating(product.getAverageRating());
-
-
-
+        if (p.getProductType() != null) {
+            dto.setTypeId(p.getProductType().getId());
+            dto.setTypeName(p.getProductType().getType_name());
+        }
+        dto.setTotalStock(totalStock);
+        dto.setTotalAvailableQte(totalAvailableQte);
         return dto;
     }
-    public static ProductDto toDTOadmin(Product product, int totalStock, int totalAvailableQte) {
+    public static ProductDto toDTO(Product product, int totalStock, int totalAvailableQte) {
 
         ProductDto dto = new ProductDto();
 
