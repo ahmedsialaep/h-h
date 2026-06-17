@@ -5,6 +5,7 @@ import freelance.twin.sport.server.commande.dto.CommandeItemDto;
 import freelance.twin.sport.server.commande.dto.CommandeRequest;
 import freelance.twin.sport.server.commande.entity.Commande;
 import freelance.twin.sport.server.commande.entity.CommandItem;
+import freelance.twin.sport.server.commande.projection.CommandeProjection;
 
 
 public class CommandeMapper {
@@ -86,6 +87,31 @@ public class CommandeMapper {
         dto.setVariantSize(item.getVariant().getSize());
         dto.setVariantColor(item.getVariant().getColor());
         return dto;
+    }
+    public static CommandeDto fromProjection(CommandeProjection view) {
+        return CommandeDto.builder()
+                .id(view.getId())
+                .adress(view.getAdress())
+                .city(view.getCity())
+                .ref(view.getRef())
+                .deliveryMethod(view.getDeliveryMethod())
+                .notes(view.getNotes())
+                .commentaire(view.getCommentaire())
+                .createdAt(view.getCreatedAt())
+                .status(view.getStatus())
+                .updatedAt(view.getUpdatedAt())
+                .phone(view.getPhone())
+                .totalPrice(view.getTotalPrice())
+                .deliveryFee(view.getDeliveryFee())
+                .userId(view.getUserId())
+                .username(view.getUsername())
+                .userNom(view.getUserNom())
+                .userPrenom(view.getUserPrenom())
+                .guestFirstName(view.getGuestFirstName())
+                .guestLastName(view.getGuestLastName())
+                .guestEmail(view.getGuestEmail())
+                .guestPhone(view.getGuestPhone())
+                .build();
     }
 
 }

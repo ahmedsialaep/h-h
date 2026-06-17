@@ -52,7 +52,6 @@ public class CommandeService {
     private final ProductRepository productRepository;
     private final ProductVarsRepository varsRepository;
     private final StockReservationService reservationService;
-    private final OrderStatusMessageService orderStatusMessageService;
     private final CommandeItemRepository commandeItemRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -73,7 +72,7 @@ public class CommandeService {
                 : null;
 
         return commandeRepository.findAllWithFilters(filter.getUserId(), search, statuses, pageable)
-                .map(CommandeMapper::toDTO);
+                .map(CommandeMapper::fromProjection);
     }
 
     public Commande retrieveCommande(Long id) {
@@ -98,7 +97,7 @@ public class CommandeService {
     public List<CommandeDto> retrieveAllCommandesByUser(UUID userId) {
         return commandeRepository.findCommandesByUser_IdOrderByCreatedAtDesc(userId)
                 .stream()
-                .map(CommandeMapper::toDTO)
+                .map(CommandeMapper::fromProjection)
                 .toList();
     }
 

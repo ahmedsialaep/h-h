@@ -37,7 +37,7 @@ public class StockCleanupService {
     @Scheduled(fixedRate = 300_000)
     @Transactional
     public void cleanupExpiredReservations() {
-        int batchSize = 500;
+        int batchSize = 100;
         int processed;
 
         do {

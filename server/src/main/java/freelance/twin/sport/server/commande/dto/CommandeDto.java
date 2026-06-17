@@ -2,8 +2,7 @@ package freelance.twin.sport.server.commande.dto;
 
 import freelance.twin.sport.server.commande.entity.DeliveryMethod;
 import freelance.twin.sport.server.commande.entity.Status;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,6 +10,9 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class CommandeDto {
     private Long id;
     private String adress;

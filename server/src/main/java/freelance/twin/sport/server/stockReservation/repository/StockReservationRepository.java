@@ -30,7 +30,7 @@ public interface StockReservationRepository extends JpaRepository<StockReservati
 
     void deleteByVariantIdAndTypeAndUserId(Long variantId, ReservationType type, UUID userId);
     @Query("SELECT r FROM StockReservation r WHERE r.expiresAt < :now AND r.type = 'CART'")
-    List<StockReservation> findExpiredCartReservations(LocalDateTime now, Pageable pageable);
+    List<StockReservation> findExpiredCartReservations(@Param("now")LocalDateTime now, Pageable pageable);
 
     List<StockReservation> findByCommandeIdAndType(Long commandeId, ReservationType type);
 
