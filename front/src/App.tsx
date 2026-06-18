@@ -130,7 +130,7 @@ const AppContent = () => {
                 <Route
                   path="/profile"
                   element={
-                    <ProtectedRoute requireAuth require2FA>
+                    <ProtectedRoute requireAuth require2FA requireLoadingDefault>
                       <Profile />
                     </ProtectedRoute>
                   }

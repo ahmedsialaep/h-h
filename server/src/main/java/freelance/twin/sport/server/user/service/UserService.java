@@ -78,20 +78,20 @@ public class UserService {
     }
 
 
-    public User getUserById(Long idUser) {
-        return userRepository.findById(idUser).get();
+    public User getUserById(UUID idUser) {
+        return userRepository.findUserById(idUser);
     }
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    public User saveUser(User user) {
+    public void registerUser(User user) {
 
         user.setPwd(passwordEncoder.encode(user.getPwd()));
         user.setTwoFaMethod(TwofaMethod.EMAIL);
         user.setRoleUser(Role.STANDARD);
-        return userRepository.save(user);
+        userRepository.save(user);
     }
 
     public Optional<User> findUserByUsername(String email) {
@@ -313,18 +313,15 @@ public class UserService {
 
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AuthenticationException("No authenticated user found");
+            throw new InvalidSession("Session expiré");
         }
-
-        Object principal = authentication.getPrincipal();
-
-        if (principal instanceof UserDetails userDetails) {
-            return userRepository.findUserByUsername(userDetails.getUsername());
+        String username = authentication.getName();
+        User user = userRepository.findUserByUsername(username);
+        if (user == null) {
+            throw new SessionExpiredException("Session expiré");
         }
-
-        return null;
+        return user;
     }
 
 }

@@ -24,7 +24,6 @@ import java.util.logging.Logger;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    private static final Logger logger = Logger.getLogger(AuthController.class.getName());
 
     private final UserService userService;
 
@@ -36,7 +35,7 @@ public class AuthController {
             response.put("error", "Username déja utilisé");
             return ResponseEntity.badRequest().body(response);
         }
-        userService.saveUser(user);
+        userService.registerUser(user);
         response.put("message", "Création avec succès");
         return ResponseEntity.ok(response);
     }
@@ -68,6 +67,7 @@ public class AuthController {
     public ResponseEntity<?> csrf() {
         return ResponseEntity.ok().build();
     }
+
 
     @GetMapping("/validate-session")
     public ResponseEntity<?> validateSession(HttpServletRequest request,HttpServletResponse response) {

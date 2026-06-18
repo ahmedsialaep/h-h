@@ -20,6 +20,7 @@ import commandeReducer from "./CommandeSlice";
 import cartReducer from "./CartSlice";
 import magasinReducer from "./MagasinSlice";
 import statsReducer from "./statsSlice";
+import userReducer from "./userSlice";
 
 const authPersistConfig = {
   key: "auth",
@@ -41,7 +42,8 @@ const rootReducer = combineReducers({
   types: typeReducer,
   commande: commandeReducer,
   magasin: magasinReducer,
-  stats: statsReducer
+  stats: statsReducer,
+  user: userReducer
 });
 
 export const store = configureStore({

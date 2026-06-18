@@ -2,6 +2,7 @@ package freelance.twin.sport.server.filters;
 
 import freelance.twin.sport.server.user.exception.ActiveSessionException;
 import freelance.twin.sport.server.user.exception.InvalidSession;
+import freelance.twin.sport.server.user.exception.SessionExpiredException;
 import freelance.twin.sport.server.user.service.CustomUserDetailsService;
 import freelance.twin.sport.server.user.service.TokenStoreService;
 import freelance.twin.sport.server.utils.JwtUtils;
@@ -99,7 +100,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         } catch (Exception ex) {
             log.error("JWT authentication failed for user [{}]: {}", username, ex.getMessage());
-            resolver.resolveException(request, response, null, ex);
+            clearAuth(response);
+            resolver.resolveException(request, response, null, new SessionExpiredException("Session expiré"));
             return;
         }
 
