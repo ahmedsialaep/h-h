@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import ProductCard from "@/components/ProductCard";
-import { ShoppingBag, Heart, ArrowLeft, Star, AlertTriangle } from "lucide-react";
+import { ShoppingBag, Heart, ArrowLeft, Star, AlertTriangle, Store, Truck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchProducts, fetchProductById, clearSelected, fetchVariantStock } from "@/store/productSlice";
@@ -12,6 +12,7 @@ import EmptyState from "@/components/EmptyState";
 import { IMAGE_API_URL } from "@/config/config";
 import { useToast } from "../hooks/use-toast";
 import { store } from "../store/store";
+import PageSkeleton from "../components/PageSkeleton";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -108,9 +109,9 @@ const ProductDetail = () => {
         : [...currentItems, item];
 
       try {
-        
+
         await dispatch(syncCart(updatedItems.map(({ id, ...rest }) => ({ ...rest, id: id ?? undefined })))).unwrap();
-        
+
       } catch (err: any) {
         toast({
           title: "Erreur",
@@ -160,7 +161,7 @@ const ProductDetail = () => {
   };
 
   if (selectedStatus === "loading") {
-    return <Loading fullScreen size="xl" text="Chargement du produit..." />;
+    return <PageSkeleton variant="detail" />
   }
 
   if (selectedStatus === "failed" || (selectedStatus === "succeeded" && !product)) {
@@ -368,9 +369,15 @@ const ProductDetail = () => {
                 )}
                 {activeTab === "shipping" && (
                   <div className="space-y-2">
-                    <p>🏪 <strong className="text-foreground">Retrait Gratuit en Magasin</strong> — Prêt sous 24 heures</p>
-                    <p>🚚 <strong className="text-foreground">Livraison Standard</strong> — 2–5 jours ouvrables</p>
-                    <p>⚡ <strong className="text-foreground">Livraison Express</strong> — 1–2 jours ouvrables</p>
+                    <div className="flex items-center gap-2">
+                      <Store size={16} className="text-primary shrink-0" />
+                      <p><strong className="text-foreground">Retrait Gratuit en Magasin</strong> — Prêt sous 48 heures</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Truck size={16} className="text-primary shrink-0" />
+                      <p><strong className="text-foreground">Livraison Standard</strong> — 2–5 jours ouvrables</p>
+                    </div>
+                    {/*<p>⚡ <strong className="text-foreground">Livraison Express</strong> — 1–2 jours ouvrables</p>*/}
                   </div>
                 )}
               </div>

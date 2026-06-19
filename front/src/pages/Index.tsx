@@ -7,6 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchProducts } from "@/store/productSlice";
 import { fetchBrands } from "@/store/brandSlice";
+import PageSkeleton from "../components/PageSkeleton";
 
 const letterVariants = {
   hidden: { opacity: 0, y: 50 },
@@ -20,8 +21,8 @@ const letterVariants = {
 const Index = () => {
   const dispatch = useAppDispatch();
   const products = useAppSelector((state) => state.products.items);
+  const statusProducts = useAppSelector((state) => state.products.status)
   const brands = useAppSelector((state) => state.brands.items);
-
   const headline = "ÉQUIPEZ-VOUS. DÉMARQUEZ-VOUS.";
   const newArrivals = products.slice(0, 4);
 
@@ -218,11 +219,17 @@ const Index = () => {
               Voir Tout <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {newArrivals.map((product, i) => (
-              <ProductCard key={product.id} product={product} index={i} />
-            ))}
-          </div>
+          {statusProducts === "loading" ? (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <PageSkeleton variant="grid" gridCount={4}/>
+      </div>
+    ) : (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        {newArrivals.map((product, i) => (
+          <ProductCard key={product.id} product={product} index={i} />
+        ))}
+      </div>
+    )}
         </div>
       </section>
 
@@ -241,7 +248,7 @@ const Index = () => {
               </div>
               <div>
                 <h3 className="font-heading font-bold text-lg text-foreground mb-1">Retrait Gratuit en Magasin</h3>
-                <p className="text-muted-foreground text-sm">Commandez en ligne et récupérez gratuitement dans notre magasin à Tunis. Prêt en 24 heures.</p>
+                <p className="text-muted-foreground text-sm">Commandez en ligne et récupérez gratuitement dans notre magasin à Sfax. Prêt en 48 heures.</p>
               </div>
             </motion.div>
             <motion.div
