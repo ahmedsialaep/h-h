@@ -19,6 +19,8 @@ public class ProductFilterRequest {
     private List<String> colors;
     private String search;
     private Boolean newArrival;
+    private Integer lowStockThreshold;
+
     private List<Boolean> marketVisible;
     private List<String> size;
 

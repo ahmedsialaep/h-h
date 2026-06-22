@@ -10,7 +10,7 @@ import OrderCard from "@/components/admin/OrderCard";
 
 const AdminOrders = () => {
   const dispatch = useAppDispatch();
-  const { items: orders, currentPage, totalPages, filters } = useAppSelector(state => state.commande);
+  const { items: orders, currentPage, totalPages, totalItems,filters } = useAppSelector(state => state.commande);
   const [selectedStatuses, setSelectedStatuses] = useState<Status[]>([]);
   const [search, setSearch] = useState("");
   const [pendingChange, setPendingChange] = useState<{ orderId: number; status: Status } | null>(null);
@@ -95,7 +95,7 @@ const AdminOrders = () => {
       {/* Header */}
       <div>
         <h1 className="font-heading font-black text-2xl md:text-3xl text-foreground">Commandes</h1>
-        <p className="text-muted-foreground text-sm mt-1">{orders.length} commandes au total</p>
+        <p className="text-muted-foreground text-sm mt-1">{totalItems} commandes au total</p>
       </div>
 
       {/* Search Bar */}

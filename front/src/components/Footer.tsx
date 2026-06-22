@@ -3,6 +3,8 @@ import { Instagram, Facebook, Twitter } from "lucide-react";
 import { Categorie } from "@/models/Product";
 
 const Footer = () => {
+  const fbLink = "https://www.facebook.com/share/1ENTLjzUTk/?mibextid=wwXIfr";
+  const instaLink= "https://www.instagram.com/hassanethoussine?igsh=d3FwOGk1a3ljNmF1&utm_source=qr";
   return (
     <footer className="bg-secondary border-t border-border">
       <div className="container mx-auto px-4 md:px-6 py-12 md:py-16">
@@ -16,9 +18,12 @@ const Footer = () => {
               Votre destination pour le sportswear premium à Tunis.
             </p>
             <div className="flex gap-4 mt-5">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><Instagram size={18} /></a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><Facebook size={18} /></a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><Twitter size={18} /></a>
+              <a href={fbLink} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <Facebook size={18} />
+            </a>
+            <a href={instaLink} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <Instagram size={18} />
+            </a>
             </div>
           </div>
 

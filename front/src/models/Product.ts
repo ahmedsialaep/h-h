@@ -65,7 +65,8 @@ export interface ProductFilters {
   brandIds?: number[] | null;
   genres?: Genre[] | null;
   categories?: Categorie[] | null;
-  types?: number[] | null;
+  types?: number[] | null; 
+  lowStockThreshold?: number | null;
   colors?: string[] | null;
   size?: string[] | null;
   minPrice?: number | null;

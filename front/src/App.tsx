@@ -48,16 +48,18 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  
+
   useEffect(() => {
     dispatch(restoreSession());
   }, []);
 
   useEffect(() => {
-    if (user) {
+    const isAdminRoute = location.pathname.startsWith("/admin");
+
+    if (user && !isAdminRoute) {
       dispatch(fetchCart());
     }
-  }, [user]);
+  }, [user, location.pathname]);
 
   return (
     <BrowserRouter>
@@ -148,18 +150,18 @@ const AppContent = () => {
                 <Route
                   path="/checkout"
                   element={
-                    
-                      <Checkout />
-                    
+
+                    <Checkout />
+
                   }
                 />
 
                 <Route
                   path="/order-tracking"
                   element={
-                    
-                      <OrderTracking />
-                    
+
+                    <OrderTracking />
+
                   }
                 />
 
@@ -179,15 +181,15 @@ const AppContent = () => {
 const App = () => (
   <Provider store={store}>
     <PersistGate loading={<Loading fullScreen size="lg" />} persistor={persistor}>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ThemeProvider>
-        <Toaster />
-        <Sonner />
-        <AppContent />
-        </ThemeProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ThemeProvider>
+            <Toaster />
+            <Sonner />
+            <AppContent />
+          </ThemeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
     </PersistGate>
   </Provider>
 );

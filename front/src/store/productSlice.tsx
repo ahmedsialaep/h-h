@@ -9,12 +9,14 @@ type Status = "idle" | "loading" | "succeeded" | "failed";
 
 interface ProductState {
   items: ProductDTO[];
+  lowStockItems: ProductDTO[];
   selected: ProductDTO | null;
   totalPages: number;
   totalItems: number;
   currentPage: number;
   filters: ProductFilters;
   status: Status;
+  statusLowStock: Status;
   selectedStatus: Status;
   error: string | null;
   variantStock: ProductVariantDTO;
@@ -30,6 +32,8 @@ const initialFilters: ProductFilters = {
   types: null,
   colors: null,
   size: null,
+  lowStockThreshold:null,
+
   minPrice: null,
   maxPrice: null,
   newArrival: null,
@@ -43,12 +47,14 @@ const initialFilters: ProductFilters = {
 
 const initialState: ProductState = {
   items: [],
+  lowStockItems: [],
   selected: null,
   totalPages: 0,
   totalItems: 0,
   currentPage: 0,
   filters: initialFilters,
   status: "idle",
+  statusLowStock: "idle",
   selectedStatus: "idle",
   error: null,
   variantStock: null,
@@ -79,6 +85,23 @@ export const fetchProducts = createAsyncThunk<
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.error || "Failed to fetch products");
+  }
+});
+export const fetchLowStockProducts = createAsyncThunk<
+  PagedResponse<ProductDTO>,
+  { page?: number; pageSize?: number; threshold?: number },
+  { rejectValue: string }
+>("products/fetchLowStock", async ({ page = 0, pageSize = 10, threshold = 5 }, { rejectWithValue }) => {
+  try {
+    const params = new URLSearchParams();
+    params.append("page", String(page));
+    params.append("pageSize", String(pageSize));
+    params.append("threshold", String(threshold));
+
+    const response = await api.get<PagedResponse<ProductDTO>>("/products/low-stock", { params });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.error || "Failed to fetch low stock products");
   }
 });
 
@@ -259,6 +282,21 @@ const productSlice = createSlice({
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.status = "failed";
+        state.error = action.payload ?? "Unknown error";
+      })
+      .addCase(fetchLowStockProducts.pending, (state) => {
+        state.statusLowStock = "loading";
+        state.error = null;
+      })
+      .addCase(fetchLowStockProducts.fulfilled, (state, action) => {
+        state.statusLowStock = "succeeded";
+        state.lowStockItems = action.payload.content;
+        state.totalPages = action.payload.totalPages;
+        state.totalItems = action.payload.totalItems;
+        state.currentPage = action.payload.currentPage;
+      })
+      .addCase(fetchLowStockProducts.rejected, (state, action) => {
+        state.statusLowStock = "failed";
         state.error = action.payload ?? "Unknown error";
       })
 

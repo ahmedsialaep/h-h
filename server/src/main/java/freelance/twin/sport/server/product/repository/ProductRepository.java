@@ -25,4 +25,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             "variants"
     })
     Optional<Object> findProductById(Long id);
+
+
 }

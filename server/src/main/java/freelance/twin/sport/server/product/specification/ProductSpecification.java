@@ -160,6 +160,24 @@ public class ProductSpecification {
 
                 predicates.add(cb.exists(sizeSubquery));
             }
+            if (filter.getLowStockThreshold() != null) {
+                Subquery<Long> stockSubquery = query.subquery(Long.class);
+                Root<ProductVars> stockVariantRoot = stockSubquery.from(ProductVars.class);
+
+                stockSubquery.select(stockVariantRoot.get("product").get("id"));
+                stockSubquery.where(
+                        cb.equal(stockVariantRoot.get("product").get("id"), root.get("id"))
+                );
+                stockSubquery.groupBy(stockVariantRoot.get("product").get("id"));
+                stockSubquery.having(
+                        cb.le(
+                                cb.sumAsLong(stockVariantRoot.get("stock")),
+                                filter.getLowStockThreshold()
+                        )
+                );
+
+                predicates.add(cb.exists(stockSubquery));
+            }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };

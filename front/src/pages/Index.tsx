@@ -21,6 +21,7 @@ const letterVariants = {
 const Index = () => {
   const dispatch = useAppDispatch();
   const products = useAppSelector((state) => state.products.items);
+  const filters = useAppSelector((state) => state.products.filters);
   const statusProducts = useAppSelector((state) => state.products.status)
   const brands = useAppSelector((state) => state.brands.items);
   const headline = "ÉQUIPEZ-VOUS. DÉMARQUEZ-VOUS.";
@@ -28,11 +29,13 @@ const Index = () => {
 
   useEffect(() => {
     dispatch(fetchProducts({
-      page: 0,
-      pageSize: 4,
-      newArrival: true,
-      sortBy: "id",
-      sortDir: "asc",
+      filters: {
+        ...filters,
+        pageSize: 4,
+        newArrival: true,
+        sortBy: "id",
+        sortDir: "asc",
+      }
     }));
     dispatch(fetchBrands());
   }, [dispatch]);
@@ -120,15 +123,15 @@ const Index = () => {
         <div className="animate-marquee flex gap-16 whitespace-nowrap">
           {brands.length > 0
             ? [...brands, ...brands].map((brand, i) => (
-                <span key={i} className="font-heading font-bold text-2xl text-muted-foreground/30 uppercase tracking-widest">
-                  {brand.brand_name}
-                </span>
-              ))
+              <span key={i} className="font-heading font-bold text-2xl text-muted-foreground/30 uppercase tracking-widest">
+                {brand.brand_name}
+              </span>
+            ))
             : Array.from({ length: 10 }).map((_, i) => (
-                <span key={i} className="font-heading font-bold text-2xl text-muted-foreground/10 uppercase tracking-widest">
-                  ●
-                </span>
-              ))}
+              <span key={i} className="font-heading font-bold text-2xl text-muted-foreground/10 uppercase tracking-widest">
+                ●
+              </span>
+            ))}
         </div>
       </section>
 
@@ -220,16 +223,16 @@ const Index = () => {
             </Link>
           </div>
           {statusProducts === "loading" ? (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        <PageSkeleton variant="grid" gridCount={4}/>
-      </div>
-    ) : (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        {newArrivals.map((product, i) => (
-          <ProductCard key={product.id} product={product} index={i} />
-        ))}
-      </div>
-    )}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <PageSkeleton variant="grid" gridCount={4} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {newArrivals.map((product, i) => (
+                <ProductCard key={product.id} product={product} index={i} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

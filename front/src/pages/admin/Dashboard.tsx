@@ -7,6 +7,7 @@ import SummaryCards from "./Dashboard/DashboardSummaryCard";
 import CategoryBarChart from "./Dashboard/CategorieBarChart";
 import RecentOrders from "./Dashboard/RecentOrders";
 import LowStockList from "./Dashboard/LowStockList";
+import { fetchLowStockProducts } from "../../store/productSlice";
 
 
 const Dashboard = () => {
@@ -14,20 +15,21 @@ const Dashboard = () => {
   const currentYear = new Date().getFullYear();
 
   const { items: orders } = useAppSelector((state) => state.commande);
-  const products = useAppSelector((state) => state.products.items);
+  const lowStockProducts = useAppSelector((state) => state.products.lowStockItems);
   const { dashboard } = useAppSelector((state) => state.stats);
 
   useEffect(() => {
     dispatch(fetchDashboard(currentYear));
 
     dispatch(fetchCommandes({ page: 0, pageSize: 5, userId: null, search: null, status: null }));
+    dispatch(fetchLowStockProducts({ page: 0, pageSize: 5, threshold: 5 }));
+
   }, [dispatch]);
 
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
-  const lowStockProducts = products.filter((p) => (p.totalAvailableQte ?? 0) <= 5);
 
   return (
     <div className="space-y-8">
@@ -46,7 +48,7 @@ const Dashboard = () => {
         <RecentOrders orders={recentOrders} />
         <LowStockList products={lowStockProducts} />
       </div>
-      
+
     </div>
   );
 };

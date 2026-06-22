@@ -95,7 +95,17 @@ public class ProductService {
             );
         });
     }
+    public Page<ProductDto> retrieveLowStockProducts(int page, int pageSize, int threshold) {
 
+        ProductFilterRequest filter = new ProductFilterRequest();
+        filter.setPage(page);
+        filter.setPageSize(pageSize);
+        filter.setSortBy("name");
+        filter.setSortDir("asc");
+        filter.setLowStockThreshold(threshold);
+
+        return retrieveAllProductsShop(filter);
+    }
     public List<Product> retrieveAllProducts() {
         return productRepository.findAll();
     }

@@ -78,7 +78,14 @@ const OrderCard = ({
                         {" • "}
                         {order.username || order.guestEmail}
                         {" • "}
-                        {new Date(order.createdAt).toLocaleString("fr-TN")}
+                        {new Date(order.createdAt).toLocaleString("fr-TN", {
+                            hour12: false,
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        })}
                     </p>
                     {order.adress && (
                         <p className="text-muted-foreground text-xs mt-1">
