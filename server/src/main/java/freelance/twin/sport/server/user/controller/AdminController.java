@@ -1,10 +1,5 @@
 package freelance.twin.sport.server.user.controller;
 
-import freelance.twin.sport.server.commande.dto.CommandeDto;
-import freelance.twin.sport.server.commande.dto.CommandeFilterRequest;
-import freelance.twin.sport.server.commande.entity.Commande;
-import freelance.twin.sport.server.commande.entity.Status;
-import freelance.twin.sport.server.commande.mapper.CommandeMapper;
 import freelance.twin.sport.server.commande.service.CommandeService;
 import freelance.twin.sport.server.magasin.entity.Magasin;
 import freelance.twin.sport.server.magasin.service.MagasinService;
@@ -16,19 +11,14 @@ import freelance.twin.sport.server.product.entity.Type;
 import freelance.twin.sport.server.product.mapper.ProductMapper;
 import freelance.twin.sport.server.product.service.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/admin")
@@ -83,6 +73,7 @@ public class AdminController {
         brandService.removeBrand(id);
         return ResponseEntity.noContent().build();
     }
+
     //product
     @PostMapping(value = "/product/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProductDto> createProduct(

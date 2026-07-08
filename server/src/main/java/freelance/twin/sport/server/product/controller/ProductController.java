@@ -73,11 +73,14 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
     @GetMapping("/low-stock")
-    public ResponseEntity<Page<ProductDto>> getLowStockProducts(
+    public ResponseEntity<PagedResponse<ProductDto>> getLowStockProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int pageSize,
             @RequestParam(defaultValue = "5") int threshold
     ) {
-        return ResponseEntity.ok(productService.retrieveLowStockProducts(page, pageSize, threshold));
+        Page<ProductDto> productsPage = productService.retrieveLowStockProducts(page, pageSize, threshold);
+        PagedResponse<ProductDto> response =
+                PagedResponse.of(productsPage);
+        return ResponseEntity.ok(response);
     }
 }
