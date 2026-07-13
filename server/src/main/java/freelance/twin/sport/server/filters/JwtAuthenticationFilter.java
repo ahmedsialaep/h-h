@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,6 +34,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final TokenStoreService tokenStoreService;
     private final HandlerExceptionResolver resolver;
+
+    @Value("${app.security.xsrfCookieName}")
+    private String xsrfCookieName;
+
+    @Value("${app.security.sessionCookieName}")
+    private String sessionCookieName;
 
     public JwtAuthenticationFilter(
             CustomUserDetailsService customUserDetailsService,
@@ -110,8 +117,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void clearAuth(HttpServletResponse response) {
         jwtUtils.buildClearCookie(response, jwtUtils.COOKIE_NAME);
-        jwtUtils.buildClearCookie(response, "XSRF-TOKEN");
-        jwtUtils.buildClearCookie(response, "JSESSIONID");
+        jwtUtils.buildClearCookie(response, sessionCookieName);
+        jwtUtils.buildClearCookie(response, xsrfCookieName);
         SecurityContextHolder.clearContext();
     }
 }

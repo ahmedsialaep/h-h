@@ -14,12 +14,15 @@ public class SessionConfig {
 
     @Value("${app.security.cookiePath}")
     private String cookiePath;
+    @Value("${app.security.sessionCookieName}")
+    private String sessionCookieName;
 
     @Bean
     public ServletContextInitializer sessionCookieCustomizer() {
         return servletContext -> {
             SessionCookieConfig sessionCookieConfig = servletContext.getSessionCookieConfig();
             sessionCookieConfig.setPath(cookiePath);
+            sessionCookieConfig.setName(sessionCookieName);
         };
     }
 }

@@ -2,34 +2,24 @@ package freelance.twin.sport.server.config;
 
 import freelance.twin.sport.server.filters.CsrfCookieFilter;
 import freelance.twin.sport.server.filters.JwtAuthenticationFilter;
-import freelance.twin.sport.server.user.service.CustomUserDetailsService;
-import freelance.twin.sport.server.user.service.TokenStoreService;
-import freelance.twin.sport.server.user.service.UserService;
-import freelance.twin.sport.server.utils.JwtUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +30,7 @@ import java.util.List;
 public class SecurityConfig {
 
     @Autowired
-    private  JwtAuthenticationFilter jwtAuthenticationFilter;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Value("${app.upload.image-dir}")
     private String imageUploadDir;
@@ -48,32 +38,29 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
-    @Value("${app.security.cookiePath}")
-    private String cookiePath;
+    @Autowired
+    private CsrfTokenRepository csrfTokenRepository;
+    @Autowired
+    private  CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler;
+    @Autowired
+    private  CsrfCookieFilter csrfCookieFilter;
+    @Autowired
+    private  CsrfConfig csrfConfig;
 
     @Autowired
     private SecurityHeaderConfig securityHeadersConfigurer;
 
 
-    @Bean
-    public CookieCsrfTokenRepository csrfTokenRepository() {
-        CookieCsrfTokenRepository repo = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repo.setCookiePath(cookiePath);
-        return repo;
-    }
-    @Bean
-    public CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler() {
-        return new CsrfTokenRequestAttributeHandler();
-    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         securityHeadersConfigurer.configure(http);
         http
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository())
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers("/auth/login", "/auth/register", "/auth/csrf","/auth/logout",
-                                "/auth/2fa/send","/auth/2fa/verify")
+                        .csrfTokenRepository(csrfTokenRepository)
+                        .csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
+                        .ignoringRequestMatchers("/auth/login", "/auth/register", "/auth/csrf", "/auth/logout",
+                                "/auth/2fa/send", "/auth/2fa/verify")
                 )
                 .cors(c -> c.configurationSource(request -> {
                     var config = new org.springframework.web.cors.CorsConfiguration();
@@ -84,7 +71,7 @@ public class SecurityConfig {
                     config.setAllowedHeaders(Arrays.asList(
                             "Authorization",
                             "Content-Type",
-                            "X-XSRF-TOKEN",
+                            csrfConfig.getCsrfHeaderName(),
                             "Accept",
                             "Origin",
                             "X-Requested-With",
@@ -105,7 +92,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request
 
                         .requestMatchers("/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/magasin","/product-vars","/product-vars/**","/commande/{ref}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/magasin", "/product-vars", "/product-vars/**", "/commande/{ref}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/commande/checkout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/**", "/brand/**", "/product-type/**").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN_TWIN")
@@ -119,7 +106,7 @@ public class SecurityConfig {
                 )
 
                 .addFilterAfter(
-                        new CsrfCookieFilter(csrfTokenRepository()),
+                        csrfCookieFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .sessionManagement(session ->
