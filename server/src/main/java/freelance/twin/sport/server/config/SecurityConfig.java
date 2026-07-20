@@ -90,11 +90,14 @@ public class SecurityConfig {
                     return config;
                 }))
                 .authorizeHttpRequests(request -> request
-
                         .requestMatchers("/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.GET, "/magasin", "/product-vars", "/product-vars/**", "/commande/{ref}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/commande/checkout").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/products/**", "/brand/**", "/product-type/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/products", "/products/**",
+                                "/brand", "/brand/**",
+                                "/product-type", "/product-type/**"
+                        ).permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN_TWIN")
                         .requestMatchers("/commande/**", "/payment/**", "/profile/**").hasAnyAuthority("STANDARD", "ADMIN_TWIN")
                         .requestMatchers("/auth/**", "/img/**").permitAll()

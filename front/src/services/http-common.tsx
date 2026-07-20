@@ -12,8 +12,8 @@ const api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
     headers: { "Content-Type": "application/json" },
-    xsrfCookieName: "XSRF-TOKEN",
-    xsrfHeaderName: "X-XSRF-TOKEN",
+    xsrfCookieName: "JMX_XSRF",
+    xsrfHeaderName: "JMX_X_XSRF",
 });
 
 const ClearSession = async () => {
@@ -26,7 +26,7 @@ const ClearSession = async () => {
 
     localStorage.clear();
 
-    window.location.href = "/login";
+    //window.location.href = "/login";
 };
 
 api.interceptors.request.use(async (config) => {
@@ -37,10 +37,10 @@ api.interceptors.request.use(async (config) => {
     ["POST", "PUT", "DELETE", "PATCH"].includes(method || "") &&
     !AUTH_ENDPOINTS.some(ep => url.includes(ep))
   ) {
-    const token = Cookies.get("XSRF-TOKEN");
+    const token = Cookies.get("JMX_XSRF");
     
     if (token) {
-      config.headers["X-XSRF-TOKEN"] = token;
+      config.headers["JMX_X_XSRF"] = token;
     }
   }
 
@@ -92,7 +92,7 @@ api.interceptors.response.use(
                     "[Auth] 403 Forbidden:",
                     url,
                     "| CSRF:",
-                    error.config?.headers?.["X-XSRF-TOKEN"] ?? "MISSING"
+                    error.config?.headers?.["JMX_X_XSRF"] ?? "MISSING"
                 );
                 break;
 

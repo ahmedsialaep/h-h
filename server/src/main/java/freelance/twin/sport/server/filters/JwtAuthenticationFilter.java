@@ -51,7 +51,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.tokenStoreService = tokenStoreService;
         this.resolver = resolver;
     }
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        String method = request.getMethod();
 
+        boolean skip = false;
+
+        if (path.startsWith("/auth/") || path.startsWith("/img/")) {
+            skip = true;
+        } else if ("GET".equalsIgnoreCase(method)) {
+            skip = path.equals("/magasin")
+                    || path.startsWith("/product-vars")
+                    || path.startsWith("/products")
+                    || path.startsWith("/brand")
+                    || path.startsWith("/product-type")
+                    || path.matches("/commande/[^/]+");
+        } else if ("POST".equalsIgnoreCase(method) && path.equals("/commande/checkout")) {
+            skip = true;
+        }
+
+        log.info("JwtAuthenticationFilter.shouldNotFilter -> method={}, servletPath={}, requestURI={}, contextPath={}, skip={}",
+                method, path, request.getRequestURI(), request.getContextPath(), skip);
+
+        return skip;
+    }
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
